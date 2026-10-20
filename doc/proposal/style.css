@@ -1,0 +1,39 @@
+@page {
+  size: A4;
+  margin: 1.5cm;
+}
+
+body {
+  font-family: 'Roboto', sans-serif;
+  font-size: 10pt;
+  line-height: 1.5;
+  color: #1a1a1a;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Roboto', sans-serif;
+  font-weight: 700;
+  color: #111;
+}
+
+h1 {
+  font-size: 1.1rem;
+  margin-top: 0;
+  margin-bottom: 0.25rem;
+}
+
+h2 {
+  font-size: 1rem;
+  margin-top: 1rem;
+  margin-bottom: 0.25rem;
+}
+
+p {
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+}
+
+a {
+  color: #1d4ed8;
+  text-decoration: none;
+}

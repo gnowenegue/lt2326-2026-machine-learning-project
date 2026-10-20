@@ -1,0 +1,67 @@
+# Project Roadmap: The Role of Swear Words in Toxicity Detection
+
+**Research Question:** *How does the presence or absence of swear words affect the performance of toxicity detection systems?*
+**Author:** Eugene Wong
+**Dataset:** Jigsaw Toxic Comment Classification Challenge (Kaggle 2018)
+**Lexicon:** NoSwearing Dictionary
+
+---
+
+## High-Level Checklist
+
+- [x] **Phase 1: Environment & Project Setup**
+  - [x] Configure dependency management with `uv` and pin Python 3.12.
+  - [x] Verify hardware acceleration (Apple Silicon MPS / CUDA).
+  - [x] Finalize `.gitignore` and project structure.
+  - [x] Establish initial git tracking and commit history.
+
+- [ ] **Phase 2: Data Acquisition & Preprocessing**
+  - [x] Download Jigsaw Toxic Comment dataset via `kagglehub`.
+  - [x] Filter out unlabelled test rows (`toxic == -1`).
+  - [x] Define binary ground truth target (`is_toxic`).
+  - [ ] Implement text normalization and cleaning.
+  - [ ] Create reproducible train / validation / test splits.
+
+- [ ] **Phase 3: Lexicon Processing & Comment Tagging**
+  - [x] Acquire raw NoSwearing lexicon (`data/lexicon/noswearing_raw.xml`).
+  - [ ] Parse, normalize, and deduplicate lexicon word list.
+  - [ ] Implement robust token/word-boundary matching to avoid substring false positives.
+  - [ ] Tag dataset splits with swear presence (`has_swear`) and inspect distributions.
+
+- [ ] **Phase 4: Test Set Slicing (2x2 Evaluation Matrix)**
+  - [ ] Construct the four evaluation slices from the test set:
+    - **$T_{sw}$**: Toxic with swear words *(Overt toxicity)*
+    - **$T_{nosw}$**: Toxic without swear words *(Covert toxicity)*
+    - **$NT_{sw}$**: Non-toxic with swear words *(Benign profanity / false alarm risk)*
+    - **$NT_{nosw}$**: Non-toxic without swear words *(Clean negative baseline)*
+  - [ ] Generate summary statistics for each slice (sample count, proportion, length distribution).
+
+- [ ] **Phase 5: Baseline Models**
+  - [ ] **Floor baselines**: Majority class classifier and random guessing baseline.
+  - [ ] **Rule-based baseline**: Direct lexicon lookup (predict toxic if swear present).
+  - [ ] **Traditional ML baseline**: TF-IDF feature extraction + Logistic Regression.
+
+- [ ] **Phase 6: Transformer Fine-Tuning**
+  - [ ] Select pre-trained encoder architecture (e.g., DistilBERT or DeBERTa-v3).
+  - [ ] Build tokenization and batching pipeline.
+  - [ ] Train binary classifier with validation tracking and save best checkpoint.
+
+- [ ] **Phase 7: Sliced Evaluation & Comparative Analysis**
+  - [ ] Evaluate all models on the full test set (Precision, Recall, F1, PR-AUC, ROC-AUC).
+  - [ ] Compute core sliced comparative metrics:
+    - **Sensitivity drop on toxic comments:** $\Delta \text{Recall} = \text{Recall}(T_{sw}) - \text{Recall}(T_{nosw})$
+    - **Benign profanity penalty:** $\Delta \text{FPR} = \text{FPR}(NT_{sw}) - \text{FPR}(NT_{nosw})$
+  - [ ] Build unified comparative results table and visualization plots.
+
+- [ ] **Phase 8: Qualitative Error Analysis**
+  - [ ] Analyze false positives in $NT_{sw}$ (harmless swearing flagged as toxic).
+  - [ ] Analyze false negatives in $T_{nosw}$ (covert toxicity missed without swear words).
+  - [ ] Inspect feature weights / model confidence distributions across slices.
+
+- [ ] **Phase 9: Stretch Goals (Optional)**
+  - [ ] Counterfactual perturbation tests (swapping or removing swear words).
+  - [ ] Breakdown by toxicity sub-dimensions (`threat`, `insult`, `identity_hate`).
+
+- [ ] **Phase 10: Final Deliverables & Report**
+  - [ ] Clean and document pipeline for reproducibility.
+  - [ ] Write final report following the proposal outline and research findings.
