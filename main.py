@@ -45,13 +45,15 @@ print(f"Using device: {DEVICE}")
 # Note that the lexicon contains some words that aren't swear words. These words are manually removed from the final lexicon.
 
 # %%
-import os
 import re
 
-words = re.findall(
-    r'<title>(.*?)</title>',
-    open('./data/lexicon/noswearing_raw.xml').read()
-)
+lexicon_raw_filepath = './data/lexicon/noswearing_raw.xml'
+lexicon_filepath = './data/lexicon/noswearing.txt'
+
+with open(lexicon_raw_filepath, 'r', encoding='utf-8') as f:
+    words = re.findall(r'<title>(.*?)</title>', f.read())
+
+unique_words = sorted({word.strip().lower() for word in words})
 
 whitelist = [
     "gay",
@@ -62,17 +64,16 @@ whitelist = [
     "testicle",
     "vagina",
     "cunnilingus",
-    "fellatio"
+    "fellatio",
+    r"mothafuckin\\\'"
 ]
 
-if not os.path.exists('./data/lexicon/noswearing.txt'):
-    with open('./data/lexicon/noswearing.txt', 'w') as f:
-        for word in words:
-            if word not in whitelist:
-                f.write(word + '\n')
-    print("Lexicon processed and saved.")
-else:
-    print("Lexicon already exists.")
+clean_lexicon = [word for word in unique_words if word not in whitelist]
+
+with open(lexicon_filepath, 'w', encoding='utf-8') as f:
+    f.write('\n'.join(clean_lexicon) + '\n')
+
+print(f"Lexicon saved to {lexicon_filepath} with {len(clean_lexicon)} words")
 
 
 # %% [markdown]
