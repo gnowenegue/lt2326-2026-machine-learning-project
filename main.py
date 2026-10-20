@@ -273,3 +273,16 @@ for df in dfs:
         f"Sample texts:\n{json.dumps(df['comment_text'].sample(10).tolist(), indent=2, ensure_ascii=False)}"
     )
 
+# %% [markdown]
+# ### Split the data into train and validation datasets
+
+# %%
+from sklearn.model_selection import train_test_split
+
+train_df, valid_df = train_test_split(
+    train_df,
+    test_size=0.2,
+    shuffle=True,
+    random_state=13,
+    stratify=train_df["is_toxic"],
+)
