@@ -78,3 +78,22 @@ print(train_df['is_toxic'].value_counts(), "\n")
 print(
     f"Toxic comments percentage: {train_df['is_toxic'].value_counts(normalize=True)[1]:.2%}"
 )
+
+# %%
+# remove the comments that have no labels
+test_labels_clean = test_labels[
+    (test_labels[toxic_classes] != -1)
+    .all(axis=1)
+]
+
+# create a new column to indicate if the comment is toxic
+test_labels_df = test_labels_clean.copy()
+test_labels_df['is_toxic'] = (
+    test_labels_df[toxic_classes] == 1
+).any(axis=1).astype(int)
+
+# drop all the toxic classes columns
+test_labels_df = test_labels_df.drop(columns=toxic_classes)
+
+print(f"Test labels (filtered) shape: {test_labels_df.shape}\n")
+print(f"Sample test labels (filtered):\n{test_labels_df.head(10)}\n")
