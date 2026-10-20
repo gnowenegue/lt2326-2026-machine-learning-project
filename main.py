@@ -56,3 +56,25 @@ print(f"Sample test data:\n{test_data.head(10)}")
 print("\n", '-'*50, "\n")
 print(f"Test labels shape: {test_labels.shape}\n")
 print(f"Sample test labels:\n{test_labels.head(10)}")
+
+# %%
+# get the toxic classes from the train data
+toxic_classes = train_data.columns.tolist()
+toxic_classes.remove('id')
+toxic_classes.remove('comment_text')
+print(f"Toxic classes: {toxic_classes}\n")
+
+# create a new column to indicate if the comment is toxic
+train_df = train_data.copy()
+train_df['is_toxic'] = (
+    train_df[toxic_classes] == 1
+).any(axis=1).astype(int)
+
+# drop all the toxic classes columns
+train_df = train_df.drop(columns=toxic_classes)
+
+print(f"Sample train data:\n{train_df.head(10)}\n")
+print(train_df['is_toxic'].value_counts(), "\n")
+print(
+    f"Toxic comments percentage: {train_df['is_toxic'].value_counts(normalize=True)[1]:.2%}"
+)
