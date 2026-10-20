@@ -15,18 +15,18 @@
   - [x] Finalize `.gitignore` and project structure.
   - [x] Establish initial git tracking and commit history.
 
-- [ ] **Phase 2: Data Acquisition & Preprocessing**
+- [x] **Phase 2: Data Acquisition & Preprocessing**
   - [x] Download Jigsaw Toxic Comment dataset via `kagglehub`.
   - [x] Filter out unlabelled test rows (`toxic == -1`).
   - [x] Define binary ground truth target (`is_toxic`).
-  - [ ] Implement text normalization and cleaning.
-  - [ ] Create reproducible train / validation / test splits.
+  - [x] Implement text normalization and cleaning.
+  - [x] Create reproducible train / validation / test splits.
 
-- [ ] **Phase 3: Lexicon Processing & Comment Tagging**
+- [x] **Phase 3: Lexicon Processing & Comment Tagging**
   - [x] Acquire raw NoSwearing lexicon (`data/lexicon/noswearing_raw.xml`).
-  - [ ] Parse, normalize, and deduplicate lexicon word list.
-  - [ ] Implement robust token/word-boundary matching to avoid substring false positives.
-  - [ ] Tag dataset splits with swear presence (`has_swear`) and inspect distributions.
+  - [x] Parse, normalize, and deduplicate lexicon word list.
+  - [x] Implement robust token/word-boundary matching to avoid substring false positives.
+  - [x] Tag dataset splits with swear presence (`has_swear`) and inspect distributions.
 
 - [ ] **Phase 4: Test Set Slicing (2x2 Evaluation Matrix)**
   - [ ] Construct the four evaluation slices from the test set:
