@@ -13,6 +13,9 @@
 #     name: python3
 # ---
 
+# %% [markdown]
+# ## Setup
+
 # %%
 import torch
 
@@ -72,6 +75,13 @@ else:
     print("Lexicon already exists.")
 
 
+# %% [markdown]
+# ### Download the dataset
+#
+# Use the `kagglehub` library to download the dataset.
+#
+# More information about the dataset can be found [here](https://www.kaggle.com/competitions/jigsaw-toxic-comment-classification-challenge/).
+
 # %%
 import kagglehub
 
@@ -80,6 +90,18 @@ path = kagglehub.competition_download(
     'jigsaw-toxic-comment-classification-challenge')
 
 print("Path to competition files:", path)
+
+# %% [markdown]
+# ### Load the dataset
+#
+# Use the `pandas` library to load the dataset.
+#
+# The dataset consists of 3 files:
+# - `train.csv.zip` - training data
+# - `test.csv.zip` - test data
+# - `test_labels.csv.zip` - test labels
+#
+# The shapes and samples of each file are printed below.
 
 # %%
 import os
@@ -104,6 +126,13 @@ print("\n", '-'*50, "\n")
 print(f"Test labels shape: {test_labels.shape}\n")
 print(f"Sample test labels:\n{test_labels.head(10)}")
 
+# %% [markdown]
+# ## Preprocessing
+#
+# ### Merge toxic classes into one
+#
+# The dataset consists of multiple toxic classes. But for this project, we are only considering if the comment is toxic or not. Thus, a new column `is_toxic` is created by checking if any of the toxic classes is 1.
+
 # %%
 # get the toxic classes from the train data
 toxic_classes = train_data.columns.tolist()
@@ -126,6 +155,13 @@ print(
     f"Toxic comments percentage: {train_df['is_toxic'].value_counts(normalize=True)[1]:.2%}"
 )
 
+# %% [markdown]
+# ### Clean up the test labels
+#
+# In the test labels, there are comments that aren't labelled. These comments have a value of -1 for all the toxic classes. These comments are removed from the test labels.
+#
+# After which, the same merging of toxic classes is applied. Then, these changes are being reflected on the test dataset.
+
 # %%
 # remove the comments that have no labels
 test_labels_clean = test_labels[
@@ -147,6 +183,7 @@ print(f"Sample test labels (filtered):\n{test_labels_df.head(10)}\n")
 
 print("\n", '-'*50, "\n")
 
+# merge the test data with the test labels
 test_df = pd.merge(test_data, test_labels_df, on='id')
 
 print(f"Test data (filtered) shape: {test_df.shape}\n")
