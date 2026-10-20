@@ -16,9 +16,21 @@
 # %% [markdown]
 # ## Setup
 
-# %%
-import torch
+# %% [markdown]
+# ### Imports
 
+# %%
+import html
+import json
+import os
+import re
+
+import kagglehub
+import pandas as pd
+import torch
+from sklearn.model_selection import train_test_split
+
+# %%
 if torch.cuda.is_available():
     DEVICE = torch.device('cuda:1')
 elif torch.backends.mps.is_available():
@@ -45,8 +57,6 @@ print(f"Using device: {DEVICE}")
 # Note that the lexicon contains some words that aren't swear words. These words are manually removed from the final lexicon.
 
 # %%
-import re
-
 lexicon_raw_filepath = './data/lexicon/noswearing_raw.xml'
 lexicon_filepath = './data/lexicon/noswearing.txt'
 
@@ -84,8 +94,6 @@ print(f"Lexicon saved to {lexicon_filepath} with {len(clean_lexicon)} words")
 # More information about the dataset can be found [here](https://www.kaggle.com/competitions/jigsaw-toxic-comment-classification-challenge/).
 
 # %%
-import kagglehub
-
 # Download latest version
 path = kagglehub.competition_download(
     'jigsaw-toxic-comment-classification-challenge')
@@ -105,10 +113,6 @@ print("Path to competition files:", path)
 # The shapes and samples of each file are printed below.
 
 # %%
-import os
-
-import pandas as pd
-
 train_data_path = os.path.join(path, 'train.csv.zip')
 train_data = pd.read_csv(train_data_path)
 
@@ -201,8 +205,6 @@ print(
 # - There is no validation dataset, therefore we will have to split the training dataset into training and validation datasets.
 
 # %%
-import json
-
 def check_data_quality(df):
     print(f"Total rows: {len(df)}\n")
     print(f"Missing values:\n{df.isna().sum()}\n")
@@ -227,9 +229,6 @@ check_data_quality(test_df)
 # ### Clean the data
 
 # %%
-import html
-
-
 def clean_data(text):
     if pd.isna(text):
         return ""
@@ -296,8 +295,6 @@ for df in [train_df, test_df]:
 # ### Split the data into train and validation datasets
 
 # %%
-from sklearn.model_selection import train_test_split
-
 train_df_backup = train_df.copy()
 
 train_df, valid_df = train_test_split(
