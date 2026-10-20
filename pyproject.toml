@@ -1,0 +1,19 @@
+[project]
+name = "lt2326-2026-machine-learning-project"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "kagglehub>=1.0.2",
+    "numpy>=2.5.4",
+    "pandas>=3.0.6",
+    "torch>=2.14.1",
+    "tqdm>=4.70.1",
+]
+
+[dependency-groups]
+dev = [
+    "ipykernel>=7.4.0",
+    "jupytext>=1.19.6",
+]
