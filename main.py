@@ -118,13 +118,13 @@ test_labels_path = os.path.join(path, 'test_labels.csv.zip')
 test_labels = pd.read_csv(test_labels_path)
 
 print(f"Train data shape: {train_data.shape}\n")
-print(f"Sample train data:\n{train_data.head(10)}")
+print(f"Sample train data:\n{train_data.sample(10)}")
 print("\n", '-'*50, "\n")
 print(f"Test data shape: {test_data.shape}\n")
-print(f"Sample test data:\n{test_data.head(10)}")
+print(f"Sample test data:\n{test_data.sample(10)}")
 print("\n", '-'*50, "\n")
 print(f"Test labels shape: {test_labels.shape}\n")
-print(f"Sample test labels:\n{test_labels.head(10)}")
+print(f"Sample test labels:\n{test_labels.sample(10)}")
 
 # %% [markdown]
 # ## Preprocessing
