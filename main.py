@@ -24,3 +24,12 @@ else:
     DEVICE = torch.device('cpu')
 
 print(f"Using device: {DEVICE}")
+
+# %%
+import kagglehub
+
+# Download latest version
+path = kagglehub.competition_download(
+    'jigsaw-toxic-comment-classification-challenge')
+
+print("Path to competition files:", path)
