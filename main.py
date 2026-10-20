@@ -97,3 +97,14 @@ test_labels_df = test_labels_df.drop(columns=toxic_classes)
 
 print(f"Test labels (filtered) shape: {test_labels_df.shape}\n")
 print(f"Sample test labels (filtered):\n{test_labels_df.head(10)}\n")
+
+print("\n", '-'*50, "\n")
+
+test_df = pd.merge(test_data, test_labels_df, on='id')
+
+print(f"Test data (filtered) shape: {test_df.shape}\n")
+print(f"Sample test data (filtered):\n{test_df.head(10)}\n")
+print(test_df['is_toxic'].value_counts(), "\n")
+print(
+    f"Toxic comments percentage: {test_df['is_toxic'].value_counts(normalize=True)[1]:.2%}"
+)
