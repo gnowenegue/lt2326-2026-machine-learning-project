@@ -275,15 +275,56 @@ for df in dfs:
     )
 
 # %% [markdown]
+# A new column `has_swear` is also created to determine if the comments contain any swear words from the lexicon.
+
+# %%
+with open(lexicon_filepath, 'r', encoding='utf-8') as f:
+    swear_words = [line.strip() for line in f if line.strip()]
+
+swear_word_pattern = re.compile(
+    r'\b(?:' + '|'.join(map(re.escape, swear_words)) + r')\b',
+    flags=re.IGNORECASE
+)
+
+for df in [train_df, test_df]:
+    df['has_swear'] = df['comment_text'].str.contains(
+        swear_word_pattern,
+        regex=True
+    ).astype(int)
+
+# %% [markdown]
 # ### Split the data into train and validation datasets
 
 # %%
 from sklearn.model_selection import train_test_split
 
+train_df_backup = train_df.copy()
+
 train_df, valid_df = train_test_split(
-    train_df,
+    train_df_backup,
     test_size=0.2,
     shuffle=True,
     random_state=13,
-    stratify=train_df["is_toxic"],
+    stratify=train_df_backup["is_toxic"],
 )
+
+# %%
+for name, df in [("Train", train_df), ("Valid", valid_df), ("Test", test_df)]:
+    print(f"{'#'*10} {name} Dataset (Total: {len(df):,d}) {'#'*10}\n")
+
+    ct = pd.crosstab(
+        df["is_toxic"],
+        df["has_swear"],
+        rownames=["is_toxic"],
+        colnames=["has_swear"],
+        margins=True
+    )
+    print(ct, "\n")
+
+    toxic_with_swear = ct.loc[1, 1] / ct.loc[1, "All"]
+    nontoxic_with_swear = ct.loc[0, 1] / ct.loc[0, "All"]
+
+    print(f"Toxic comments containing swears: {toxic_with_swear:.2%}")
+    print(f"Non-toxic comments containing swears: {nontoxic_with_swear:.2%}")
+
+    print("\n", '-' * 50, "\n")
