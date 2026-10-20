@@ -192,3 +192,84 @@ print(test_df['is_toxic'].value_counts(), "\n")
 print(
     f"Toxic comments percentage: {test_df['is_toxic'].value_counts(normalize=True)[1]:.2%}"
 )
+
+# %% [markdown]
+# ### Initial thoughts
+#
+# - The dataset is extremely imbalanced, with only 10% of the comments being toxic. This will be a challenge when making a fair evaluation.
+# - There is no validation dataset, therefore we will have to split the training dataset into training and validation datasets.
+
+# %%
+import json
+
+def check_data_quality(df):
+    print(f"Total rows: {len(df)}\n")
+    print(f"Missing values:\n{df.isna().sum()}\n")
+    print(f"Duplicates: {df.duplicated().sum()}\n")
+    print(
+        f"Empty comments: {(df['comment_text'].fillna("").str.strip() == '').sum()}\n"
+    )
+    print(
+        f"Sample texts:\n{json.dumps(df['comment_text'].sample(10).tolist(), indent=2, ensure_ascii=False)}"
+    )
+
+
+print('#' * 10, "Quality check for train data:", '#' * 10)
+check_data_quality(train_df)
+
+print("\n", '-'*50, "\n")
+
+print('#' * 10, "Quality check for test data:", '#' * 10)
+check_data_quality(test_df)
+
+# %% [markdown]
+# ### Clean the data
+
+# %%
+import html
+
+
+def clean_data(text):
+    if pd.isna(text):
+        return ""
+
+    # unescape html entities
+    text = html.unescape(text)
+
+    # csv quotes
+    text = text.replace('""', '"')
+
+    # replace urls with token
+    text = re.sub(r'https?://\S+|www\.\S+', '[URL]', text)
+
+    # replace ips with token
+    text = re.sub(r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}', '[IP]', text)
+
+    # remove wiki headers formatting
+    text = re.sub(r'={2,}', '', text)
+
+    # remove wiki indentation formatting
+    text = re.sub(r'^\s*:+\s*', '', text, flags=re.MULTILINE)
+
+    # collapse elongated words (from 3 to 2)
+    text = re.sub(r'(.)\1{2,}', r'\1\1', text)
+
+    # collapse horizontal spacings
+    text = re.sub(r'[ \t]+', ' ', text)
+
+    # collapse vertical spacings
+    text = re.sub(r'[\n\r]+', '\n', text)
+
+    # remove starting and trailing quotes and spaces
+    text = text.strip(' \n\t\r"\'')
+
+    return text
+
+
+dfs = [train_df, test_df]
+for df in dfs:
+    df["comment_text"] = df["comment_text"].apply(clean_data)
+    print(
+        f"Sample texts:\n{json.dumps(df['comment_text'].sample(10).tolist(), indent=2, ensure_ascii=False)}"
+    )
+
