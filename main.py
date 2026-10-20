@@ -25,6 +25,53 @@ else:
 
 print(f"Using device: {DEVICE}")
 
+# %% [markdown]
+# ### Download the lexicon
+#
+# The swear word lexicon is downloaded from [noswearing.com](https://www.noswearing.com/fulldict.xml).
+#
+# ```shell
+# curl -s https://www.noswearing.com/fulldict.xml -o data/lexicon/noswearing_raw.xml
+# ```
+
+# %% [markdown]
+# ### Process and clean the lexicon
+#
+# The lexicon downloaded is in XML format. The words are extracted and saved in a separate text file.
+#
+# Note that the lexicon contains some words that aren't swear words. These words are manually removed from the final lexicon.
+
+# %%
+import os
+import re
+
+words = re.findall(
+    r'<title>(.*?)</title>',
+    open('./data/lexicon/noswearing_raw.xml').read()
+)
+
+whitelist = [
+    "gay",
+    "lesbian",
+    "queer",
+    "anus",
+    "penis",
+    "testicle",
+    "vagina",
+    "cunnilingus",
+    "fellatio"
+]
+
+if not os.path.exists('./data/lexicon/noswearing.txt'):
+    with open('./data/lexicon/noswearing.txt', 'w') as f:
+        for word in words:
+            if word not in whitelist:
+                f.write(word + '\n')
+    print("Lexicon processed and saved.")
+else:
+    print("Lexicon already exists.")
+
+
 # %%
 import kagglehub
 
