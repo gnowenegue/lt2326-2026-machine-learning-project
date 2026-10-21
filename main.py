@@ -28,6 +28,7 @@ import re
 import kagglehub
 import pandas as pd
 import torch
+from sklearn.dummy import DummyClassifier
 from sklearn.model_selection import train_test_split
 
 # %%
@@ -342,3 +343,22 @@ for name, df in [("Train", train_df), ("Valid", valid_df), ("Test", test_df)]:
     print(f"Non-toxic comments containing swears: {nontoxic_with_swear:.2%}")
 
     print("\n", '-' * 50, "\n")
+
+# %% [markdown]
+# ## Baselines
+#
+# ### Floor baselines
+
+# %%
+# majority class baseline
+majority_baseline = DummyClassifier(strategy="most_frequent")
+majority_baseline.fit(train_df["comment_text"], train_df["is_toxic"])
+
+# random baseline
+random_baseline = DummyClassifier(strategy="stratified", random_state=13)
+random_baseline.fit(train_df["comment_text"], train_df["is_toxic"])
+
+# %% [markdown]
+# ### Rule-based baseline
+#
+# The rule-based baseline is based on the assumption that toxic comments contain swear words. Thus, if a comment contains any swear words, it is classified as toxic. This can be achieved by referencing the `has_swear` column which was created previously above.
