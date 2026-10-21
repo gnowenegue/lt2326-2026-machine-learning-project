@@ -29,7 +29,10 @@ import kagglehub
 import pandas as pd
 import torch
 from sklearn.dummy import DummyClassifier
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline
 
 # %%
 if torch.cuda.is_available():
@@ -362,3 +365,22 @@ random_baseline.fit(train_df["comment_text"], train_df["is_toxic"])
 # ### Rule-based baseline
 #
 # The rule-based baseline is based on the assumption that toxic comments contain swear words. Thus, if a comment contains any swear words, it is classified as toxic. This can be achieved by referencing the `has_swear` column which was created previously above.
+
+# %% [markdown]
+# #### Traditional ML baseline (TF-IDF + Logistic Regression)
+
+# %%
+tfidf_lr_baseline = Pipeline([
+    ("tfidf", TfidfVectorizer(
+        ngram_range=(1, 2),
+        max_features=25000,
+        min_df=3,
+        sublinear_tf=True
+    )),
+    ("clf", LogisticRegression(
+        class_weight="balanced",
+        max_iter=1000,
+        random_state=13))
+])
+
+tfidf_lr_baseline.fit(train_df["comment_text"], train_df["is_toxic"])
