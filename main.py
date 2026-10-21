@@ -26,11 +26,14 @@ import os
 import re
 
 import kagglehub
+import matplotlib.pyplot as plt
 import pandas as pd
 import torch
 from sklearn.dummy import DummyClassifier
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import (accuracy_score, average_precision_score, f1_score,
+                             precision_score, recall_score)
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 
@@ -384,3 +387,48 @@ tfidf_lr_baseline = Pipeline([
 ])
 
 tfidf_lr_baseline.fit(train_df["comment_text"], train_df["is_toxic"])
+
+
+# %%
+def evaluate_model(y_true, y_pred, y_proba=None, model_name="Model"):
+    accuracy = accuracy_score(y_true, y_pred)
+    precision = precision_score(y_true, y_pred, zero_division=0)
+    recall = recall_score(y_true, y_pred, zero_division=0)
+    f1 = f1_score(y_true, y_pred, zero_division=0)
+
+    pr_auc = average_precision_score(
+        y_true, y_proba) if y_proba is not None else None
+
+    return {
+        "Model": model_name,
+        "Accuracy": round(accuracy, 4),
+        "Precision": round(precision, 4),
+        "Recall": round(recall, 4),
+        "F1": round(f1, 4),
+        "PR-AUC": round(pr_auc, 4) if pr_auc is not None else "N/A",
+    }
+
+
+# %%
+y_true = valid_df["is_toxic"]
+valid_texts = valid_df["comment_text"]
+
+y_pred_majority = majority_baseline.predict(valid_texts)
+y_proba_majority = majority_baseline.predict_proba(valid_texts)[:, 1]
+result_majority = evaluate_model(
+    y_true, y_pred_majority, y_proba_majority, "Majority Baseline")
+
+y_pred_random = random_baseline.predict(valid_texts)
+y_proba_random = random_baseline.predict_proba(valid_texts)[:, 1]
+result_random = evaluate_model(
+    y_true, y_pred_random, y_proba_random, "Random Baseline")
+
+y_pred_rule = valid_df["has_swear"]
+result_rule = evaluate_model(y_true, y_pred_rule, None, "Rule-Based Baseline")
+
+y_pred_tfidf_lr = tfidf_lr_baseline.predict(valid_texts)
+y_proba_tfidf_lr = tfidf_lr_baseline.predict_proba(valid_texts)[:, 1]
+result_tfidf_lr = evaluate_model(
+    y_true, y_pred_tfidf_lr, y_proba_tfidf_lr, "TF-IDF + Logistic Regression")
+
+pd.DataFrame([result_majority, result_random, result_rule, result_tfidf_lr])
