@@ -305,6 +305,23 @@ train_df, valid_df = train_test_split(
     stratify=train_df_backup["is_toxic"],
 )
 
+# %% [markdown]
+# ### Checkpoint
+#
+# Saving the dataframes as parquet files to avoid reprocessing the data.
+
+# %%
+# train_df.to_parquet("./data/dataframe/train.parquet")
+# valid_df.to_parquet("./data/dataframe/valid.parquet")
+# test_df.to_parquet("./data/dataframe/test.parquet")
+
+train_df = pd.read_parquet("./data/dataframe/train.parquet")
+valid_df = pd.read_parquet("./data/dataframe/valid.parquet")
+test_df = pd.read_parquet("./data/dataframe/test.parquet")
+
+# %% [markdown]
+# #### Overview
+
 # %%
 for name, df in [("Train", train_df), ("Valid", valid_df), ("Test", test_df)]:
     print(f"{'#'*10} {name} Dataset (Total: {len(df):,d}) {'#'*10}\n")
