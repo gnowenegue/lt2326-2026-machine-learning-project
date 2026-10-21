@@ -36,10 +36,10 @@
     - **$NT_{nosw}$**: Non-toxic without swear words *(Clean negative baseline)*
   - [ ] Generate summary statistics for each slice (sample count, proportion, length distribution).
 
-- [ ] **Phase 5: Baseline Models**
-  - [ ] **Floor baselines**: Majority class classifier and random guessing baseline.
-  - [ ] **Rule-based baseline**: Direct lexicon lookup (predict toxic if swear present).
-  - [ ] **Traditional ML baseline**: TF-IDF feature extraction + Logistic Regression.
+- [x] **Phase 5: Baseline Models**
+  - [x] **Floor baselines**: Majority class classifier and random guessing baseline.
+  - [x] **Rule-based baseline**: Direct lexicon lookup (predict toxic if swear present).
+  - [x] **Traditional ML baseline**: TF-IDF feature extraction + Logistic Regression.
 
 - [ ] **Phase 6: Transformer Fine-Tuning**
   - [ ] Select pre-trained encoder architecture (e.g., DistilBERT or DeBERTa-v3).
