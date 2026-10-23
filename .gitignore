@@ -321,3 +321,6 @@ __marimo__/
 .streamlit/secrets.toml
 
 .DS_Store
+
+# Model training checkpoints
+artifact/**/checkpoint-*/
