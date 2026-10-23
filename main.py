@@ -133,14 +133,12 @@ test_data = pd.read_csv(test_data_path)
 test_labels_path = os.path.join(path, 'test_labels.csv.zip')
 test_labels = pd.read_csv(test_labels_path)
 
-print(f"Train data shape: {train_data.shape}\n")
-print(f"Sample train data:\n{train_data.sample(10)}")
-print("\n", '-'*50, "\n")
-print(f"Test data shape: {test_data.shape}\n")
-print(f"Sample test data:\n{test_data.sample(10)}")
-print("\n", '-'*50, "\n")
-print(f"Test labels shape: {test_labels.shape}\n")
-print(f"Sample test labels:\n{test_labels.sample(10)}")
+for name, df in [("TRAIN DATA", train_data), ("TEST DATA", test_data), ("TEST LABELS", test_labels)]:
+    print(f"{'#' * 10} {name} {'#' * 10}")
+    print(f"Shape: {df.shape}\n")
+    df.info()
+    print(f"\nSample data:\n{df.sample(5)}")
+    print("\n" + "-" * 50 + "\n")
 
 # %% [markdown]
 # ## Preprocessing
@@ -165,7 +163,7 @@ train_df['is_toxic'] = (
 # drop all the toxic classes columns
 train_df = train_df.drop(columns=toxic_classes)
 
-print(f"Sample train data:\n{train_df.head(10)}\n")
+print(f"Sample train data:\n{train_df.sample(5)}\n")
 print(train_df['is_toxic'].value_counts(), "\n")
 print(
     f"Toxic comments percentage: {train_df['is_toxic'].value_counts(normalize=True)[1]:.2%}"
@@ -195,7 +193,7 @@ test_labels_df['is_toxic'] = (
 test_labels_df = test_labels_df.drop(columns=toxic_classes)
 
 print(f"Test labels (filtered) shape: {test_labels_df.shape}\n")
-print(f"Sample test labels (filtered):\n{test_labels_df.head(10)}\n")
+print(f"Sample test labels (filtered):\n{test_labels_df.sample(5)}\n")
 
 print("\n", '-'*50, "\n")
 
@@ -203,7 +201,7 @@ print("\n", '-'*50, "\n")
 test_df = pd.merge(test_data, test_labels_df, on='id')
 
 print(f"Test data (filtered) shape: {test_df.shape}\n")
-print(f"Sample test data (filtered):\n{test_df.head(10)}\n")
+print(f"Sample test data (filtered):\n{test_df.sample(5)}\n")
 print(test_df['is_toxic'].value_counts(), "\n")
 print(
     f"Toxic comments percentage: {test_df['is_toxic'].value_counts(normalize=True)[1]:.2%}"
@@ -221,20 +219,17 @@ def check_data_quality(df):
     print(f"Missing values:\n{df.isna().sum()}\n")
     print(f"Duplicates: {df.duplicated().sum()}\n")
     print(
-        f"Empty comments: {(df['comment_text'].fillna("").str.strip() == '').sum()}\n"
+        f"Empty comments: {(df['comment_text'].fillna('').str.strip() == '').sum()}\n"
     )
     print(
-        f"Sample texts:\n{json.dumps(df['comment_text'].sample(10).tolist(), indent=2, ensure_ascii=False)}"
+        f"Sample texts:\n{json.dumps(df['comment_text'].sample(5).tolist(), indent=2, ensure_ascii=False)}"
     )
 
 
-print('#' * 10, "Quality check for train data:", '#' * 10)
-check_data_quality(train_df)
-
-print("\n", '-'*50, "\n")
-
-print('#' * 10, "Quality check for test data:", '#' * 10)
-check_data_quality(test_df)
+for name, df in [("train", train_df), ("test", test_df)]:
+    print('#' * 10, f"Quality check for {name} data:", '#' * 10)
+    check_data_quality(df)
+    print("\n", '-'*50, "\n")
 
 # %% [markdown]
 # ### Clean the data
@@ -271,17 +266,43 @@ def clean_data(text):
     # collapse vertical spacings
     text = re.sub(r'[\n\r]+', '\n', text)
 
-    # remove starting and trailing quotes and spaces
-    text = text.strip(' \n\t\r"\'')
+    # remove whitespace
+    text = text.strip()
+
+    if (text.startswith('"') and text.endswith('"')) or (text.startswith("'") and text.endswith("'")):
+        text = text[1:-1].strip()
 
     return text
 
+
+demo_cases = [
+    {
+        "Rule Tested": "Wiki headers, indentation, URL, IP, HTML entity, word elongation",
+        "Before": "== Admin Notice ==\n::: Visit https://en.wikipedia.org or contact 192.168.1.1 immediately! That was sooooo cool &amp; awesome.",
+    },
+    {
+        "Rule Tested": "CSV escaped quotes, www URL, character elongation, trailing spaces",
+        "Before": '""Hey you,"" check www.example.com/rules right nowwwwww!!!!!   ',
+    }
+]
+
+demo_df = pd.DataFrame([
+    {
+        "Rule Tested": case["Rule Tested"],
+        "Before": case["Before"],
+        "After": clean_data(case["Before"])
+    }
+    for case in demo_cases
+])
+
+with pd.option_context('display.max_colwidth', None):
+    display(demo_df)
 
 dfs = [train_df, test_df]
 for df in dfs:
     df["comment_text"] = df["comment_text"].apply(clean_data)
     print(
-        f"Sample texts:\n{json.dumps(df['comment_text'].sample(10).tolist(), indent=2, ensure_ascii=False)}"
+        f"Sample texts:\n{json.dumps(df['comment_text'].sample(5).tolist(), indent=2, ensure_ascii=False)}"
     )
 
 # %% [markdown]
