@@ -37,7 +37,9 @@ from sklearn.metrics import (accuracy_score, average_precision_score, f1_score,
                              precision_score, recall_score)
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
-from transformers import AutoTokenizer
+from transformers import (AutoModelForSequenceClassification, AutoTokenizer,
+                          DataCollatorWithPadding, Trainer,
+                          TrainingArguments)
 
 # %%
 if torch.cuda.is_available():
@@ -465,3 +467,44 @@ valid_dataset = valid_dataset.map(tokenize, batched=True)
 
 train_dataset = train_dataset.remove_columns(["id"])
 valid_dataset = valid_dataset.remove_columns(["id"])
+
+# %%
+model = AutoModelForSequenceClassification.from_pretrained(
+    MODEL_NAME,
+    num_labels=2
+)
+model.to(DEVICE)
+
+training_args = TrainingArguments(
+    output_dir="./artifact/model",
+    # num_train_epochs=3,
+    num_train_epochs=1,
+    # per_device_train_batch_size=2,
+    per_device_train_batch_size=8,
+    gradient_accumulation_steps=8,
+    gradient_checkpointing=True,
+    gradient_checkpointing_kwargs={"every_n_layers": 4},
+    # bf16=True,
+    learning_rate=2e-5,
+    logging_steps=10,
+    eval_strategy="epoch",
+    save_strategy="epoch",
+    load_best_model_at_end=True,
+    # label_names=["is_toxic"],
+    # remove_unused_columns=False
+)
+
+trainer = Trainer(
+    model=model,
+    args=training_args,
+    # train_dataset=train_dataset,
+    train_dataset=train_dataset.shuffle(seed=13).select(range(1000)),
+    # eval_dataset=valid_dataset,
+    eval_dataset=valid_dataset.shuffle(seed=13).select(range(300)),
+    processing_class=tokenizer,
+    data_collator=DataCollatorWithPadding(tokenizer=tokenizer),
+)
+
+trainer.train()
+
+# %%
