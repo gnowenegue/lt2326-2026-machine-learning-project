@@ -29,6 +29,7 @@ import kagglehub
 import matplotlib.pyplot as plt
 import pandas as pd
 import torch
+from datasets import Dataset
 from sklearn.dummy import DummyClassifier
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
@@ -36,6 +37,7 @@ from sklearn.metrics import (accuracy_score, average_precision_score, f1_score,
                              precision_score, recall_score)
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
+from transformers import AutoTokenizer
 
 # %%
 if torch.cuda.is_available():
@@ -313,7 +315,7 @@ train_df, valid_df = train_test_split(
 )
 
 # %% [markdown]
-# ### Checkpoint
+# ### Checkpoint for the dataframes
 #
 # Saving the dataframes as parquet files to avoid reprocessing the data.
 
@@ -432,3 +434,34 @@ result_tfidf_lr = evaluate_model(
     y_true, y_pred_tfidf_lr, y_proba_tfidf_lr, "TF-IDF + Logistic Regression")
 
 pd.DataFrame([result_majority, result_random, result_rule, result_tfidf_lr])
+
+# %% [markdown]
+# ## Pre-trained model
+
+# %%
+MODEL_NAME = "microsoft/deberta-v3-base"
+tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+
+sample_text = "This is a great project, not toxic at all!"
+tokens = tokenizer(sample_text)
+
+print(tokens)
+
+# %%
+train_dataset = Dataset.from_pandas(train_df)
+valid_dataset = Dataset.from_pandas(valid_df)
+# test_dataset = Dataset.from_pandas(test_df)
+
+
+def tokenize(batch):
+    tokens = tokenizer(batch['comment_text'], truncation=True, max_length=128)
+    tokens["labels"] = batch["is_toxic"]
+    return tokens
+
+
+train_dataset = train_dataset.map(tokenize, batched=True)
+valid_dataset = valid_dataset.map(tokenize, batched=True)
+# test_dataset = test_dataset.map(tokenize, batched=True)
+
+train_dataset = train_dataset.remove_columns(["id"])
+valid_dataset = valid_dataset.remove_columns(["id"])
