@@ -479,13 +479,20 @@ pd.DataFrame([result_majority, result_random, result_rule, result_tfidf_lr])
 # ## Pre-trained model
 
 # %%
-MODEL_NAME = "microsoft/deberta-v3-base"
+is_cuda = torch.cuda.is_available()
+MODEL_NAME = "microsoft/deberta-v3-base" if is_cuda else "microsoft/deberta-v3-small"
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
 
 sample_text = "This is a great project, not toxic at all!"
 tokens = tokenizer(sample_text)
+decoded_tokens = tokenizer.convert_ids_to_tokens(tokens["input_ids"])
 
-print(tokens)
+token_preview = pd.DataFrame({
+    "Token": decoded_tokens,
+    "Token ID": tokens["input_ids"]
+})
+
+display(token_preview)
 
 # %%
 train_dataset = Dataset.from_pandas(train_df)
@@ -507,22 +514,44 @@ train_dataset = train_dataset.remove_columns(["id"])
 valid_dataset = valid_dataset.remove_columns(["id"])
 
 # %%
+LOCAL_RUN = True
+
+if LOCAL_RUN:
+    train_dataset = train_dataset.shuffle(seed=13).select(range(3000))
+    valid_dataset = valid_dataset.shuffle(seed=13).select(range(800))
+
+# %%
 model = AutoModelForSequenceClassification.from_pretrained(
     MODEL_NAME,
-    num_labels=2
+    num_labels=2,
+    torch_dtype=torch.float32
 )
 model.to(DEVICE)
 
+
+def compute_metrics(eval_pred):
+    logits, labels = eval_pred
+    predictions = logits.argmax(axis=-1)
+    return {
+        "accuracy": round(accuracy_score(labels, predictions), 4),
+        "precision": round(precision_score(labels, predictions, zero_division=0), 4),
+        "recall": round(recall_score(labels, predictions, zero_division=0), 4),
+        "f1": round(f1_score(labels, predictions, zero_division=0), 4),
+    }
+
+
+batch_size = 16 if is_cuda else 8
+target_batch_size = 32
+
 training_args = TrainingArguments(
     output_dir="./artifact/model",
-    # num_train_epochs=3,
-    num_train_epochs=1,
-    # per_device_train_batch_size=2,
-    per_device_train_batch_size=8,
-    gradient_accumulation_steps=8,
+    num_train_epochs=3 if LOCAL_RUN else 3,
+    per_device_train_batch_size=batch_size,
+    per_device_eval_batch_size=batch_size,
+    gradient_accumulation_steps=target_batch_size // batch_size,
     gradient_checkpointing=True,
     gradient_checkpointing_kwargs={"every_n_layers": 4},
-    # bf16=True,
+    bf16=is_cuda,
     learning_rate=2e-5,
     logging_steps=10,
     eval_strategy="epoch",
@@ -535,12 +564,11 @@ training_args = TrainingArguments(
 trainer = Trainer(
     model=model,
     args=training_args,
-    # train_dataset=train_dataset,
-    train_dataset=train_dataset.shuffle(seed=13).select(range(1000)),
-    # eval_dataset=valid_dataset,
-    eval_dataset=valid_dataset.shuffle(seed=13).select(range(300)),
+    train_dataset=train_dataset,
+    eval_dataset=valid_dataset,
     processing_class=tokenizer,
     data_collator=DataCollatorWithPadding(tokenizer=tokenizer),
+    compute_metrics=compute_metrics
 )
 
 trainer.train()
