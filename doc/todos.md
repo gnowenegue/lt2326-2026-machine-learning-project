@@ -42,8 +42,8 @@
   - [x] **Traditional ML baseline**: TF-IDF feature extraction + Logistic Regression.
 
 - [ ] **Phase 6: Transformer Fine-Tuning**
-  - [ ] Select pre-trained encoder architecture (e.g., DistilBERT or DeBERTa-v3).
-  - [ ] Build tokenization and batching pipeline.
+  - [x] Select pre-trained encoder architecture (e.g., DistilBERT or DeBERTa-v3).
+  - [x] Build tokenization and batching pipeline.
   - [ ] Train binary classifier with validation tracking and save best checkpoint.
 
 - [ ] **Phase 7: Sliced Evaluation & Comparative Analysis**
