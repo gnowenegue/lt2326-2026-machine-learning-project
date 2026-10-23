@@ -317,11 +317,16 @@ swear_word_pattern = re.compile(
     flags=re.IGNORECASE
 )
 
-for df in [train_df, test_df]:
+for name, df in [("Train data", train_df), ("Test data", test_df)]:
     df['has_swear'] = df['comment_text'].str.contains(
         swear_word_pattern,
         regex=True
     ).astype(int)
+    count_swear = df['has_swear'].sum()
+    percentage_swear = count_swear/len(df)
+    print(
+        f"{name} - Comments with swear words: {count_swear} out of {len(df)} ({percentage_swear:.2%})"
+    )
 
 # %% [markdown]
 # ### Split the data into train and validation datasets
@@ -334,7 +339,7 @@ train_df, valid_df = train_test_split(
     test_size=0.2,
     shuffle=True,
     random_state=13,
-    stratify=train_df_backup["is_toxic"],
+    stratify=train_df_backup[["is_toxic", "has_swear"]],
 )
 
 # %% [markdown]
@@ -343,13 +348,22 @@ train_df, valid_df = train_test_split(
 # Saving the dataframes as parquet files to avoid reprocessing the data.
 
 # %%
-# train_df.to_parquet("./data/dataframe/train.parquet")
-# valid_df.to_parquet("./data/dataframe/valid.parquet")
-# test_df.to_parquet("./data/dataframe/test.parquet")
+FORCE_SAVE = False
 
-train_df = pd.read_parquet("./data/dataframe/train.parquet")
-valid_df = pd.read_parquet("./data/dataframe/valid.parquet")
-test_df = pd.read_parquet("./data/dataframe/test.parquet")
+os.makedirs("./data/dataframe", exist_ok=True)
+files_exists = all(
+    os.path.exists(f"./data/dataframe/{s}.parquet")
+    for s in ["train", "valid", "test"]
+)
+
+if not files_exists or FORCE_SAVE:
+    train_df.to_parquet("./data/dataframe/train.parquet")
+    valid_df.to_parquet("./data/dataframe/valid.parquet")
+    test_df.to_parquet("./data/dataframe/test.parquet")
+else:
+    train_df = pd.read_parquet("./data/dataframe/train.parquet")
+    valid_df = pd.read_parquet("./data/dataframe/valid.parquet")
+    test_df = pd.read_parquet("./data/dataframe/test.parquet")
 
 # %% [markdown]
 # #### Overview
@@ -361,17 +375,20 @@ for name, df in [("Train", train_df), ("Valid", valid_df), ("Test", test_df)]:
     ct = pd.crosstab(
         df["is_toxic"],
         df["has_swear"],
-        rownames=["is_toxic"],
-        colnames=["has_swear"],
         margins=True
     )
+
+    ct.index = ["Non-toxic", "Toxic", "All"]
+    ct.columns = ["No swear", "With swear", "All"]
+
     print(ct, "\n")
 
-    toxic_with_swear = ct.loc[1, 1] / ct.loc[1, "All"]
-    nontoxic_with_swear = ct.loc[0, 1] / ct.loc[0, "All"]
+    toxic_with_swear = ct.loc["Toxic", "With swear"] / ct.loc["Toxic", "All"]
+    nontoxic_with_swear = ct.loc["Non-toxic", "With swear"] \
+        / ct.loc["Non-toxic", "All"]
 
-    print(f"Toxic comments containing swears: {toxic_with_swear:.2%}")
-    print(f"Non-toxic comments containing swears: {nontoxic_with_swear:.2%}")
+    print(f"Toxic comments with swear word: {toxic_with_swear:.2%}")
+    print(f"Non-toxic comments with swear word: {nontoxic_with_swear:.2%}")
 
     print("\n", '-' * 50, "\n")
 
