@@ -413,14 +413,18 @@ for name, df in [("Train", train_df), ("Valid", valid_df), ("Test", test_df)]:
     ct.index = ["Non-toxic", "Toxic", "All"]
     ct.columns = ["No swear", "With swear", "All"]
 
-    print(ct, "\n")
+    def format_ct(count):
+        percentage = count/len(df)
+        return f"{count:,d} ({percentage:.2%})"
+
+    print(ct.map(format_ct), "\n")
 
     toxic_with_swear = ct.loc["Toxic", "With swear"] / ct.loc["Toxic", "All"]
     nontoxic_with_swear = ct.loc["Non-toxic", "With swear"] \
         / ct.loc["Non-toxic", "All"]
 
-    print(f"Toxic comments with swear word: {toxic_with_swear:.2%}")
-    print(f"Non-toxic comments with swear word: {nontoxic_with_swear:.2%}")
+    print(f"{toxic_with_swear:.2%} of toxic comments contain swear words")
+    print(f"{nontoxic_with_swear:.2%} of non-toxic comments contain swear words")
 
     print("\n", '-' * 50, "\n")
 
