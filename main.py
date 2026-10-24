@@ -41,6 +41,9 @@ from transformers import (AutoModelForSequenceClassification, AutoTokenizer,
                           DataCollatorWithPadding, Trainer,
                           TrainingArguments)
 
+# %% [markdown]
+# ### Determine the device
+
 # %%
 if torch.cuda.is_available():
     DEVICE = torch.device('cuda:1')
@@ -77,15 +80,17 @@ with open(lexicon_raw_filepath, 'r', encoding='utf-8') as f:
 unique_words = sorted({word.strip().lower() for word in words})
 
 whitelist = [
+    # sexual orientation
     "gay",
     "lesbian",
     "queer",
+
+    # sexual parts
     "anus",
     "penis",
     "testicle",
     "vagina",
-    "cunnilingus",
-    "fellatio",
+
     r"mothafuckin\\\'"
 ]
 
