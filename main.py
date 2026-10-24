@@ -348,12 +348,39 @@ train_df, valid_df = train_test_split(
 )
 
 # %% [markdown]
+# ### Split the test dataset into 4 slices
+
+# %%
+test_df["word_count"] = test_df["comment_text"].apply(lambda x: len(x.split()))
+
+is_toxic = test_df["is_toxic"].map({1: "toxic", 0: "non-toxic"})
+has_swear = test_df["has_swear"].map({1: "with_swear", 0: "no_swear"})
+
+test_df["slice"] = is_toxic + "_" + has_swear
+
+test_slices = {
+    "toxic_with_swear": test_df[test_df["slice"] == "toxic_with_swear"],
+    "toxic_no_swear": test_df[test_df["slice"] == "toxic_no_swear"],
+    "non-toxic_with_swear": test_df[test_df["slice"] == "non-toxic_with_swear"],
+    "non-toxic_no_swear": test_df[test_df["slice"] == "non-toxic_no_swear"],
+}
+
+test_df["slice"].value_counts()
+
+# %%
+os.makedirs("./data/dataset", exist_ok=True)
+
+train_df.to_csv("./data/dataset/train_clean.csv", index=False)
+valid_df.to_csv("./data/dataset/valid_clean.csv", index=False)
+test_df.to_csv("./data/dataset/test_clean.csv", index=False)
+
+# %% [markdown]
 # ### Checkpoint for the dataframes
 #
 # Saving the dataframes as parquet files to avoid reprocessing the data.
 
 # %%
-FORCE_SAVE = False
+FORCE_SAVE_DF = False
 
 os.makedirs("./data/dataframe", exist_ok=True)
 files_exists = all(
@@ -361,7 +388,7 @@ files_exists = all(
     for s in ["train", "valid", "test"]
 )
 
-if not files_exists or FORCE_SAVE:
+if not files_exists or FORCE_SAVE_DF:
     train_df.to_parquet("./data/dataframe/train.parquet")
     valid_df.to_parquet("./data/dataframe/valid.parquet")
     test_df.to_parquet("./data/dataframe/test.parquet")

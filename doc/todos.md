@@ -28,13 +28,13 @@
   - [x] Implement robust token/word-boundary matching to avoid substring false positives.
   - [x] Tag dataset splits with swear presence (`has_swear`) and inspect distributions.
 
-- [ ] **Phase 4: Test Set Slicing (2x2 Evaluation Matrix)**
-  - [ ] Construct the four evaluation slices from the test set:
-    - **$T_{sw}$**: Toxic with swear words *(Overt toxicity)*
-    - **$T_{nosw}$**: Toxic without swear words *(Covert toxicity)*
-    - **$NT_{sw}$**: Non-toxic with swear words *(Benign profanity / false alarm risk)*
-    - **$NT_{nosw}$**: Non-toxic without swear words *(Clean negative baseline)*
-  - [ ] Generate summary statistics for each slice (sample count, proportion, length distribution).
+- [x] **Phase 4: Test Set Slicing (2x2 Evaluation Matrix)**
+  - [x] Construct the four evaluation slices from the test set:
+    - **`toxic_with_swear`** ($T_{sw}$): Toxic with swear words *(Overt toxicity)*
+    - **`toxic_no_swear`** ($T_{nosw}$): Toxic without swear words *(Covert toxicity)*
+    - **`non-toxic_with_swear`** ($NT_{sw}$): Non-toxic with swear words *(Benign profanity / false alarm risk)*
+    - **`non-toxic_no_swear`** ($NT_{nosw}$): Non-toxic without swear words *(Clean negative baseline)*
+  - [x] Generate summary statistics for each slice (sample count, proportion, length distribution).
 
 - [x] **Phase 5: Baseline Models**
   - [x] **Floor baselines**: Majority class classifier and random guessing baseline.
