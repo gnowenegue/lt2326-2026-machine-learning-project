@@ -45,9 +45,12 @@ from transformers import (AutoModelForSequenceClassification, AutoTokenizer,
 # ### Determine the device
 
 # %%
-if torch.cuda.is_available():
+is_cuda = torch.cuda.is_available()
+is_mps = torch.backends.mps.is_available()
+
+if is_cuda:
     DEVICE = torch.device('cuda:1')
-elif torch.backends.mps.is_available():
+elif is_mps:
     DEVICE = torch.device('mps')
 else:
     DEVICE = torch.device('cpu')
@@ -71,12 +74,15 @@ print(f"Using device: {DEVICE}")
 # Note that the lexicon contains some words that aren't swear words. These words are manually removed from the final lexicon.
 
 # %%
-lexicon_raw_filepath = './data/lexicon/noswearing_raw.xml'
-lexicon_filepath = './data/lexicon/noswearing.txt'
+lexicon_directory = './data/lexicon'
+lexicon_raw_filepath = f"{lexicon_directory}/noswearing_raw.xml"
+lexicon_filepath = f"{lexicon_directory}/noswearing.txt"
 
+# extract words from the raw lexicon
 with open(lexicon_raw_filepath, 'r', encoding='utf-8') as f:
     words = re.findall(r'<title>(.*?)</title>', f.read())
 
+# remove duplicates and sort
 unique_words = sorted({word.strip().lower() for word in words})
 
 whitelist = [
@@ -91,15 +97,22 @@ whitelist = [
     "testicle",
     "vagina",
 
+    # other
     r"mothafuckin\\\'"
 ]
 
-clean_lexicon = [word for word in unique_words if word not in whitelist]
+# remove whitelisted words
+lexicon_filtered = [word for word in unique_words if word not in whitelist]
+
+# save the lexicon
+os.makedirs(lexicon_directory, exist_ok=True)
 
 with open(lexicon_filepath, 'w', encoding='utf-8') as f:
-    f.write('\n'.join(clean_lexicon) + '\n')
+    f.write('\n'.join(lexicon_filtered) + '\n')
 
-print(f"Lexicon saved to {lexicon_filepath} with {len(clean_lexicon)} words")
+print(
+    f"Lexicon saved to {lexicon_filepath} with {len(lexicon_filtered)} words"
+)
 
 
 # %% [markdown]
@@ -159,11 +172,19 @@ toxic_classes.remove('id')
 toxic_classes.remove('comment_text')
 print(f"Toxic classes: {toxic_classes}\n")
 
+
+def create_is_toxic_column(df):
+    new_df = df.copy()
+
+    new_df['is_toxic'] = (
+        new_df[toxic_classes] == 1
+    ).any(axis=1).astype(int)
+
+    return new_df
+
+
 # create a new column to indicate if the comment is toxic
-train_df = train_data.copy()
-train_df['is_toxic'] = (
-    train_df[toxic_classes] == 1
-).any(axis=1).astype(int)
+train_df = create_is_toxic_column(train_data)
 
 # drop all the toxic classes columns
 train_df = train_df.drop(columns=toxic_classes)
@@ -189,16 +210,13 @@ test_labels_clean = test_labels[
 ]
 
 # create a new column to indicate if the comment is toxic
-test_labels_df = test_labels_clean.copy()
-test_labels_df['is_toxic'] = (
-    test_labels_df[toxic_classes] == 1
-).any(axis=1).astype(int)
+test_labels_df = create_is_toxic_column(test_labels_clean)
 
 # drop all the toxic classes columns
 test_labels_df = test_labels_df.drop(columns=toxic_classes)
 
 print(f"Test labels (filtered) shape: {test_labels_df.shape}\n")
-print(f"Sample test labels (filtered):\n{test_labels_df.sample(5)}\n")
+print(f"Sample test labels (filtered):\n{test_labels_df.sample(5)}")
 
 print("\n", '-'*50, "\n")
 
@@ -222,7 +240,7 @@ print(
 def check_data_quality(df):
     print(f"Total rows: {len(df)}\n")
     print(f"Missing values:\n{df.isna().sum()}\n")
-    print(f"Duplicates: {df.duplicated().sum()}\n")
+    print(f"Duplicates: {df.duplicated().sum()}")
     print(
         f"Empty comments: {(df['comment_text'].fillna('').str.strip() == '').sum()}\n"
     )
@@ -303,12 +321,12 @@ demo_df = pd.DataFrame([
 with pd.option_context('display.max_colwidth', None):
     display(demo_df)
 
-dfs = [train_df, test_df]
-for df in dfs:
+for name, df in [("Train data", train_df), ("Test data", test_df)]:
     df["comment_text"] = df["comment_text"].apply(clean_data)
     print(
-        f"Sample texts:\n{json.dumps(df['comment_text'].sample(5).tolist(), indent=2, ensure_ascii=False)}"
+        f"{name} sample texts:\n{json.dumps(df['comment_text'].sample(5).tolist(), indent=2, ensure_ascii=False)}"
     )
+    print("\n", '-'*50, "\n")
 
 # %% [markdown]
 # A new column `has_swear` is also created to determine if the comments contain any swear words from the lexicon.
@@ -351,19 +369,22 @@ train_df, valid_df = train_test_split(
 # ### Split the test dataset into 4 slices
 
 # %%
+# create word count column
 test_df["word_count"] = test_df["comment_text"].apply(lambda x: len(x.split()))
 
-is_toxic = test_df["is_toxic"].map({1: "toxic", 0: "non-toxic"})
-has_swear = test_df["has_swear"].map({1: "with_swear", 0: "no_swear"})
+# remap binary values to labels
+is_toxic = test_df["is_toxic"].map({1: "toxic", 0: "non_toxic"})
+has_swear = test_df["has_swear"].map({1: "with_swear", 0: "without_swear"})
 
+# create slice column
 test_df["slice"] = is_toxic + "_" + has_swear
 
-test_slices = {
-    "toxic_with_swear": test_df[test_df["slice"] == "toxic_with_swear"],
-    "toxic_no_swear": test_df[test_df["slice"] == "toxic_no_swear"],
-    "non-toxic_with_swear": test_df[test_df["slice"] == "non-toxic_with_swear"],
-    "non-toxic_no_swear": test_df[test_df["slice"] == "non-toxic_no_swear"],
-}
+# test_slices = {
+#     "toxic_with_swear": test_df[test_df["slice"] == "toxic_with_swear"],
+#     "toxic_no_swear": test_df[test_df["slice"] == "toxic_no_swear"],
+#     "non_toxic_with_swear": test_df[test_df["slice"] == "non_toxic_with_swear"],
+#     "non_toxic_no_swear": test_df[test_df["slice"] == "non_toxic_no_swear"],
+# }
 
 test_df["slice"].value_counts()
 
@@ -392,10 +413,12 @@ if not files_exists or FORCE_SAVE_DF:
     train_df.to_parquet("./data/dataframe/train.parquet")
     valid_df.to_parquet("./data/dataframe/valid.parquet")
     test_df.to_parquet("./data/dataframe/test.parquet")
+    print("Dataframes saved")
 else:
     train_df = pd.read_parquet("./data/dataframe/train.parquet")
     valid_df = pd.read_parquet("./data/dataframe/valid.parquet")
     test_df = pd.read_parquet("./data/dataframe/test.parquet")
+    print("Dataframes loaded")
 
 # %% [markdown]
 # #### Overview
