@@ -487,18 +487,65 @@ tfidf_lr_baseline = Pipeline([
         random_state=13))
 ])
 
-tfidf_lr_baseline.fit(train_df["comment_text"], train_df["is_toxic"])
+tfidf_lr_baseline.fit(train_df["comment_text"], train_df["is_toxic"]);
 
 
 # %%
 def evaluate_model(y_true, y_pred, y_proba=None, model_name="Model"):
+    # overall metrics
     accuracy = accuracy_score(y_true, y_pred)
     precision = precision_score(y_true, y_pred, zero_division=0)
     recall = recall_score(y_true, y_pred, zero_division=0)
     f1 = f1_score(y_true, y_pred, zero_division=0)
-
     pr_auc = average_precision_score(
-        y_true, y_proba) if y_proba is not None else None
+        y_true,
+        y_proba
+    ) if y_proba is not None else None
+
+    def calculation_slice_metrics(slice_name, calculation_method):
+        slice = test_df["slice"] == slice_name
+        slice_pred = y_pred[slice]
+        slice_true = y_true[slice]
+        return calculation_method(
+            slice_true,
+            slice_pred,
+            zero_division=0
+        )
+
+    def false_positive_rate(y_true, y_pred, zero_division=0):
+        false_positive = ((y_true == 0) & (y_pred == 1)).sum()
+        true_negative = ((y_true == 0) & (y_pred == 0)).sum()
+        total_negatives = false_positive + true_negative
+
+        if total_negatives == 0:
+            return zero_division
+
+        return false_positive / total_negatives
+
+    # recall for toxic slices
+    recall_toxic_with_swear = calculation_slice_metrics(
+        "toxic_with_swear",
+        recall_score
+    )
+
+    recall_toxic_without_swear = calculation_slice_metrics(
+        "toxic_without_swear",
+        recall_score
+    )
+
+    delta_recall = recall_toxic_with_swear - recall_toxic_without_swear
+
+    # fpr for non-toxic slices
+    fpr_non_toxic_with_swear = calculation_slice_metrics(
+        "non_toxic_with_swear",
+        false_positive_rate
+    )
+    fpr_non_toxic_without_swear = calculation_slice_metrics(
+        "non_toxic_without_swear",
+        false_positive_rate
+    )
+
+    delta_fpr = fpr_non_toxic_with_swear - fpr_non_toxic_without_swear
 
     return {
         "Model": model_name,
@@ -507,32 +554,40 @@ def evaluate_model(y_true, y_pred, y_proba=None, model_name="Model"):
         "Recall": round(recall, 4),
         "F1": round(f1, 4),
         "PR-AUC": round(pr_auc, 4) if pr_auc is not None else "N/A",
+        "Recall (toxic with swear)": round(recall_toxic_with_swear, 4),
+        "Recall (toxic without swear)": round(recall_toxic_without_swear, 4),
+        "Delta Recall": round(delta_recall, 4),
+        "FPR (non-toxic with swear)": round(fpr_non_toxic_with_swear, 4),
+        "FPR (non-toxic without swear)": round(fpr_non_toxic_without_swear, 4),
+        "Delta FPR": round(delta_fpr, 4)
     }
 
 
 # %%
-y_true = valid_df["is_toxic"]
-valid_texts = valid_df["comment_text"]
+y_true = test_df["is_toxic"]
+test_texts = test_df["comment_text"]
 
-y_pred_majority = majority_baseline.predict(valid_texts)
-y_proba_majority = majority_baseline.predict_proba(valid_texts)[:, 1]
+y_pred_majority = majority_baseline.predict(test_texts)
+y_proba_majority = majority_baseline.predict_proba(test_texts)[:, 1]
 result_majority = evaluate_model(
     y_true, y_pred_majority, y_proba_majority, "Majority Baseline")
 
-y_pred_random = random_baseline.predict(valid_texts)
-y_proba_random = random_baseline.predict_proba(valid_texts)[:, 1]
+y_pred_random = random_baseline.predict(test_texts)
+y_proba_random = random_baseline.predict_proba(test_texts)[:, 1]
 result_random = evaluate_model(
     y_true, y_pred_random, y_proba_random, "Random Baseline")
 
-y_pred_rule = valid_df["has_swear"]
+y_pred_rule = test_df["has_swear"]
 result_rule = evaluate_model(y_true, y_pred_rule, None, "Rule-Based Baseline")
 
-y_pred_tfidf_lr = tfidf_lr_baseline.predict(valid_texts)
-y_proba_tfidf_lr = tfidf_lr_baseline.predict_proba(valid_texts)[:, 1]
+y_pred_tfidf_lr = tfidf_lr_baseline.predict(test_texts)
+y_proba_tfidf_lr = tfidf_lr_baseline.predict_proba(test_texts)[:, 1]
 result_tfidf_lr = evaluate_model(
     y_true, y_pred_tfidf_lr, y_proba_tfidf_lr, "TF-IDF + Logistic Regression")
 
-pd.DataFrame([result_majority, result_random, result_rule, result_tfidf_lr])
+test_results = pd.DataFrame(
+    [result_majority, result_random, result_rule, result_tfidf_lr]
+)
 
 # %% [markdown]
 # ## Pre-trained model
@@ -556,7 +611,7 @@ display(token_preview)
 # %%
 train_dataset = Dataset.from_pandas(train_df)
 valid_dataset = Dataset.from_pandas(valid_df)
-# test_dataset = Dataset.from_pandas(test_df)
+test_dataset = Dataset.from_pandas(test_df)
 
 
 def tokenize(batch):
@@ -567,10 +622,11 @@ def tokenize(batch):
 
 train_dataset = train_dataset.map(tokenize, batched=True)
 valid_dataset = valid_dataset.map(tokenize, batched=True)
-# test_dataset = test_dataset.map(tokenize, batched=True)
+test_dataset = test_dataset.map(tokenize, batched=True)
 
 train_dataset = train_dataset.remove_columns(["id"])
 valid_dataset = valid_dataset.remove_columns(["id"])
+test_dataset = test_dataset.remove_columns(["id"])
 
 # %%
 LOCAL_RUN = True
@@ -578,6 +634,7 @@ LOCAL_RUN = True
 if LOCAL_RUN:
     train_dataset = train_dataset.shuffle(seed=13).select(range(3000))
     valid_dataset = valid_dataset.shuffle(seed=13).select(range(800))
+    test_dataset = test_dataset.shuffle(seed=13).select(range(1000))
 
 # %%
 model = AutoModelForSequenceClassification.from_pretrained(
@@ -606,7 +663,7 @@ training_args = TrainingArguments(
     output_dir="./artifact/model",
     num_train_epochs=3 if LOCAL_RUN else 3,
     per_device_train_batch_size=batch_size,
-    per_device_eval_batch_size=batch_size,
+    per_device_eval_batch_size=batch_size * 2,
     gradient_accumulation_steps=target_batch_size // batch_size,
     gradient_checkpointing=True,
     gradient_checkpointing_kwargs={"every_n_layers": 4},
