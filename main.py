@@ -32,6 +32,7 @@ import numpy as np
 import pandas as pd
 import torch
 from datasets import Dataset
+from IPython.display import display
 from sklearn.dummy import DummyClassifier
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
@@ -731,13 +732,17 @@ else:
 y_pred_deberta = logits.argmax(axis=1)
 y_proba_deberta = torch.softmax(torch.tensor(logits), dim=-1)[:, 1].numpy()
 
+deberta_name = "DeBERTa (base)" if is_cuda else "DeBERTa (small)"
+
 result_deberta = evaluate_model(
     y_true,
     y_pred_deberta,
     y_proba_deberta,
-    model_name="DeBERTa (small)"
+    model_name=deberta_name
 )
 
 test_results = pd.concat([test_results, pd.DataFrame([result_deberta])])
 
 display(test_results)
+
+# %%
