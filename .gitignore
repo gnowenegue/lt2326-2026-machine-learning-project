@@ -322,5 +322,4 @@ __marimo__/
 
 .DS_Store
 
-# Model training checkpoints
-artifact/**/checkpoint-*/
+artifact/
