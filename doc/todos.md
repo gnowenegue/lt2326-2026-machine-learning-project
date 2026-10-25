@@ -37,21 +37,21 @@
   - [x] Generate summary statistics for each slice (sample count, proportion, length distribution).
 
 - [x] **Phase 5: Baseline Models**
-  - [x] **Floor baselines**: Majority class classifier and random guessing baseline.
-  - [x] **Rule-based baseline**: Direct lexicon lookup (predict toxic if swear present).
-  - [x] **Traditional ML baseline**: TF-IDF feature extraction + Logistic Regression.
+  - [x] **Floor baselines**: Majority class classifier and random guessing baseline (evaluated on test set and slices).
+  - [x] **Rule-based baseline**: Direct lexicon lookup (evaluated on test set and slices).
+  - [x] **Traditional ML baseline**: TF-IDF feature extraction + Logistic Regression (evaluated on test set and slices).
 
 - [ ] **Phase 6: Transformer Fine-Tuning**
-  - [x] Select pre-trained encoder architecture (e.g., DistilBERT or DeBERTa-v3).
+  - [x] Select pre-trained encoder architecture (`microsoft/deberta-v3-small` for local MPS / `deberta-v3-base` for CUDA).
   - [x] Build tokenization and batching pipeline.
-  - [ ] Train binary classifier with validation tracking and save best checkpoint.
+  - [x] Prototyping run on local subset (3k train, 800 val) verified and saved to `./artifact/model/best`.
+  - [ ] Scaled production training on full dataset (127k samples) on school server (NVIDIA A30).
 
 - [ ] **Phase 7: Sliced Evaluation & Comparative Analysis**
-  - [ ] Evaluate all models on the full test set (Precision, Recall, F1, PR-AUC, ROC-AUC).
-  - [ ] Compute core sliced comparative metrics:
-    - **Sensitivity drop on toxic comments:** $\Delta \text{Recall} = \text{Recall}(T_{sw}) - \text{Recall}(T_{nosw})$
-    - **Benign profanity penalty:** $\Delta \text{FPR} = \text{FPR}(NT_{sw}) - \text{FPR}(NT_{nosw})$
-  - [ ] Build unified comparative results table and visualization plots.
+  - [x] Implement unified sliced evaluation pipeline (`evaluate_model` with $\Delta\text{Recall}$ and $\Delta\text{FPR}$).
+  - [x] Evaluate baseline models on the full test set and 4 slices ($N = 63,978$).
+  - [ ] Finalize full-scale Transformer evaluation on test slices.
+  - [ ] Build visualization plots (Sensitivity Drop & Benign Profanity Penalty bar charts).
 
 - [ ] **Phase 8: Qualitative Error Analysis**
   - [ ] Analyze false positives in $NT_{sw}$ (harmless swearing flagged as toxic).

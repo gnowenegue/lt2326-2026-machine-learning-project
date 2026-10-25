@@ -27,6 +27,7 @@ import re
 
 import kagglehub
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import torch
 from datasets import Dataset
@@ -38,8 +39,7 @@ from sklearn.metrics import (accuracy_score, average_precision_score, f1_score,
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from transformers import (AutoModelForSequenceClassification, AutoTokenizer,
-                          DataCollatorWithPadding, Trainer,
-                          TrainingArguments)
+                          DataCollatorWithPadding, Trainer, TrainingArguments)
 
 # %% [markdown]
 # ### Determine the device
@@ -463,7 +463,7 @@ majority_baseline.fit(train_df["comment_text"], train_df["is_toxic"])
 
 # random baseline
 random_baseline = DummyClassifier(strategy="stratified", random_state=13)
-random_baseline.fit(train_df["comment_text"], train_df["is_toxic"])
+_ = random_baseline.fit(train_df["comment_text"], train_df["is_toxic"])
 
 # %% [markdown]
 # ### Rule-based baseline
@@ -487,7 +487,7 @@ tfidf_lr_baseline = Pipeline([
         random_state=13))
 ])
 
-tfidf_lr_baseline.fit(train_df["comment_text"], train_df["is_toxic"]);
+_ = tfidf_lr_baseline.fit(train_df["comment_text"], train_df["is_toxic"])
 
 
 # %%
@@ -593,7 +593,6 @@ test_results = pd.DataFrame(
 # ## Pre-trained model
 
 # %%
-is_cuda = torch.cuda.is_available()
 MODEL_NAME = "microsoft/deberta-v3-base" if is_cuda else "microsoft/deberta-v3-small"
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
 
@@ -634,7 +633,7 @@ LOCAL_RUN = True
 if LOCAL_RUN:
     train_dataset = train_dataset.shuffle(seed=13).select(range(3000))
     valid_dataset = valid_dataset.shuffle(seed=13).select(range(800))
-    test_dataset = test_dataset.shuffle(seed=13).select(range(1000))
+    # test_dataset = test_dataset.shuffle(seed=13).select(range(1000))
 
 # %%
 model = AutoModelForSequenceClassification.from_pretrained(
@@ -673,6 +672,9 @@ training_args = TrainingArguments(
     eval_strategy="epoch",
     save_strategy="epoch",
     load_best_model_at_end=True,
+    metric_for_best_model="f1",
+    greater_is_better=True,
+    save_total_limit=2
     # label_names=["is_toxic"],
     # remove_unused_columns=False
 )
@@ -690,3 +692,43 @@ trainer = Trainer(
 trainer.train()
 
 # %%
+model_directory = "./artifact/model/best"
+
+trainer.save_model(model_directory)
+
+print(f"Model saved to {model_directory}")
+
+# %%
+model = AutoModelForSequenceClassification.from_pretrained(model_directory)
+model.to(DEVICE)
+model.eval()
+
+# %%
+os.makedirs("./artifact/logits", exist_ok=True)
+
+logits_path = "./artifact/logits/deberta_test_logits.npy"
+
+if os.path.exists(logits_path):
+    print("loading saved predictions")
+    logits = np.load(logits_path)
+else:
+    test_pred = trainer.predict(test_dataset)
+    logits = test_pred.predictions
+
+    np.save(logits_path, logits)
+    print(f"saved predictions to {logits_path}")
+
+
+y_pred_deberta = logits.argmax(axis=1)
+y_proba_deberta = torch.softmax(torch.tensor(logits), dim=-1)[:, 1].numpy()
+
+result_deberta = evaluate_model(
+    y_true,
+    y_pred_deberta,
+    y_proba_deberta,
+    model_name="DeBERTa (small)"
+)
+
+test_results = pd.concat([test_results, pd.DataFrame([result_deberta])])
+
+display(test_results)
