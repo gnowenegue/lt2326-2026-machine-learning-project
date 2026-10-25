@@ -46,11 +46,13 @@ from transformers import (AutoModelForSequenceClassification, AutoTokenizer,
 # ### Determine the device
 
 # %%
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+
 is_cuda = torch.cuda.is_available()
 is_mps = torch.backends.mps.is_available()
 
 if is_cuda:
-    DEVICE = torch.device('cuda:1')
+    DEVICE = torch.device('cuda')
 elif is_mps:
     DEVICE = torch.device('mps')
 else:
@@ -634,7 +636,7 @@ valid_dataset = valid_dataset.remove_columns(["id"])
 test_dataset = test_dataset.remove_columns(["id"])
 
 # %%
-LOCAL_RUN = True
+LOCAL_RUN = False
 
 if LOCAL_RUN:
     train_dataset = train_dataset.shuffle(seed=13).select(range(3000))
@@ -670,11 +672,12 @@ training_args = TrainingArguments(
     per_device_train_batch_size=batch_size,
     per_device_eval_batch_size=batch_size * 2,
     gradient_accumulation_steps=target_batch_size // batch_size,
-    gradient_checkpointing=True,
-    gradient_checkpointing_kwargs={"every_n_layers": 4},
+    gradient_checkpointing=False,
+    # gradient_checkpointing_kwargs={"every_n_layers": 4},
     bf16=is_cuda,
     learning_rate=2e-5,
-    logging_steps=10,
+    logging_steps=50,
+    disable_tqdm=False,
     eval_strategy="epoch",
     save_strategy="epoch",
     load_best_model_at_end=True,
