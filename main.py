@@ -26,6 +26,7 @@ import os
 import re
 
 import kagglehub
+import kagglehub.auth
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -123,11 +124,16 @@ print(
 # More information about the dataset can be found [here](https://www.kaggle.com/competitions/jigsaw-toxic-comment-classification-challenge/).
 
 # %%
-# Download latest version
-path = kagglehub.competition_download(
-    'jigsaw-toxic-comment-classification-challenge')
+dataset_directory = "./data/dataset_raw"
 
-print("Path to competition files:", path)
+try:
+    if kagglehub.auth.get_kaggle_credentials() is not None:
+        dataset_directory = kagglehub.competition_download(
+            'jigsaw-toxic-comment-classification-challenge')
+except Exception as e:
+    print(e)
+
+print("Path to dataset files:", dataset_directory)
 
 # %% [markdown]
 # ### Load the dataset
@@ -142,13 +148,13 @@ print("Path to competition files:", path)
 # The shapes and samples of each file are printed below.
 
 # %%
-train_data_path = os.path.join(path, 'train.csv.zip')
+train_data_path = os.path.join(dataset_directory, 'train.csv.zip')
 train_data = pd.read_csv(train_data_path)
 
-test_data_path = os.path.join(path, 'test.csv.zip')
+test_data_path = os.path.join(dataset_directory, 'test.csv.zip')
 test_data = pd.read_csv(test_data_path)
 
-test_labels_path = os.path.join(path, 'test_labels.csv.zip')
+test_labels_path = os.path.join(dataset_directory, 'test_labels.csv.zip')
 test_labels = pd.read_csv(test_labels_path)
 
 for name, df in [("TRAIN DATA", train_data), ("TEST DATA", test_data), ("TEST LABELS", test_labels)]:
