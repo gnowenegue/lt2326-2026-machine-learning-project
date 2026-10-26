@@ -50,10 +50,9 @@ Train and test a transformer model (DeBERTa):
 
 Look at real misclassified comments to understand *why* models fail:
 
-- [ ] Inspect false alarms: Harmless comments with swearing that models got wrong
-- [ ] Inspect missed toxicity: Toxic comments without swear words that models missed
-- [ ] Find cases where DeBERTa got it right but TF-IDF got it wrong
-- [ ] Check which words Logistic Regression relies on the most
+- [x] Check which words Logistic Regression relies on the most (coefficients)
+- [x] Analyze false alarms: Compare how TF-IDF and DeBERTa handle harmless swearing
+- [x] Analyze missed attacks: Compare how TF-IDF and DeBERTa handle toxic comments without swear words
 
 ## 6. Final Report & Submission
 
