@@ -747,3 +747,128 @@ test_results = pd.concat([test_results, pd.DataFrame([result_deberta])])
 
 display(test_results)
 
+# %%
+tfidf = tfidf_lr_baseline.named_steps["tfidf"]
+logistic_regression = tfidf_lr_baseline.named_steps["clf"]
+
+# get features and their coefficients
+feature_names = tfidf.get_feature_names_out()
+coefficients = logistic_regression.coef_[0]
+
+features_coefficients_df = pd.DataFrame({
+    "feature": feature_names,
+    "coefficient": coefficients
+})
+
+top_toxic_words = features_coefficients_df.sort_values(
+    by="coefficient",
+    ascending=False
+).head(10)
+print("Top 10 words predicting TOXIC:")
+display(top_toxic_words)
+
+top_non_toxic_words = features_coefficients_df.sort_values(
+    by="coefficient",
+    ascending=True
+).head(10)
+print("Top 10 words predicting NON-TOXIC:")
+display(top_non_toxic_words)
+
+# %%
+analysis_df = pd.DataFrame({
+    "comment_text": test_df["comment_text"],
+    "slice": test_df["slice"],
+    "is_toxic": test_df["is_toxic"],
+    "has_swear": test_df["has_swear"],
+    "pred_tfidf_lr": y_pred_tfidf_lr,
+    "prob_tfidf_lr": y_proba_tfidf_lr.round(4),
+    "pred_deberta": y_pred_deberta,
+    "prob_deberta": y_proba_deberta.round(4)
+})
+
+
+def print_samples(df, n=3):
+    for _, row in df.sample(n).iterrows():
+        print(f"\n[Comment]:\n{row['comment_text'][:200]}...")
+        print(
+            f"[TF-IDF+LR]: {row['pred_tfidf_lr']} (Prob: {row['prob_tfidf_lr']})"
+        )
+        print(
+            f"[DeBERTa]: {row['pred_deberta']} (Prob: {row['prob_deberta']})"
+        )
+
+
+non_toxic_with_swear_slice = analysis_df[
+    analysis_df["slice"] == "non_toxic_with_swear"
+]
+tfidf_lr_incorrect = (
+    non_toxic_with_swear_slice["pred_tfidf_lr"] == 1
+).sum()
+deberta_incorrect = (non_toxic_with_swear_slice["pred_deberta"] == 1).sum()
+
+print(
+    f"Total non-toxic comments with swear words: {len(non_toxic_with_swear_slice)}"
+)
+print(f"\tFalse alarms by TF-IDF+LR: {tfidf_lr_incorrect}")
+print(f"\tFalse alarms by DeBERTa: {deberta_incorrect}")
+
+print('\n', '-'*100, '\n')
+
+deberta_correct_tfidf_lr_incorrect = non_toxic_with_swear_slice[
+    (non_toxic_with_swear_slice["pred_tfidf_lr"] == 1) &
+    (non_toxic_with_swear_slice["pred_deberta"] == 0)
+]
+
+print(
+    f"TF-IDF wrong, DeBERTa correct: {len(deberta_correct_tfidf_lr_incorrect)}"
+)
+print_samples(deberta_correct_tfidf_lr_incorrect)
+
+print('\n', '-'*100, '\n')
+
+deberta_incorrect_tfidf_lr_incorrect = non_toxic_with_swear_slice[
+    (non_toxic_with_swear_slice["pred_tfidf_lr"] == 1) &
+    (non_toxic_with_swear_slice["pred_deberta"] == 1)
+]
+
+print(
+    f"Both TF-IDF and DeBERTa wrong: {len(deberta_incorrect_tfidf_lr_incorrect)}"
+)
+print_samples(deberta_incorrect_tfidf_lr_incorrect)
+
+# %%
+toxic_without_swear_slice = analysis_df[
+    analysis_df["slice"] == "toxic_without_swear"
+]
+tfidf_lr_misses = (toxic_without_swear_slice["pred_tfidf_lr"] == 0).sum()
+deberta_misses = (toxic_without_swear_slice["pred_deberta"] == 0).sum()
+
+print(
+    f"Total toxic comments without swear words: {len(toxic_without_swear_slice)}"
+)
+print(f"\tMissed by TF-IDF+LR: {tfidf_lr_misses}")
+print(f"\tMissed by DeBERTa: {deberta_misses}")
+
+print('\n', '-'*100, '\n')
+
+deberta_catches_tfidf_lr_misses = toxic_without_swear_slice[
+    (toxic_without_swear_slice["pred_tfidf_lr"] == 0) &
+    (toxic_without_swear_slice["pred_deberta"] == 1)
+]
+
+print(
+    f"TF-IDF misses, DeBERTa catches: {len(deberta_catches_tfidf_lr_misses)}"
+)
+print_samples(deberta_catches_tfidf_lr_misses)
+
+print('\n', '-'*100, '\n')
+
+deberta_misses_tfidf_lr_misses = toxic_without_swear_slice[
+    (toxic_without_swear_slice["pred_tfidf_lr"] == 0) &
+    (toxic_without_swear_slice["pred_deberta"] == 0)
+]
+
+print(
+    f"Both TF-IDF and DeBERTa misses: {len(deberta_misses_tfidf_lr_misses)}"
+)
+print_samples(deberta_misses_tfidf_lr_misses)
