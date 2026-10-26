@@ -44,6 +44,14 @@ from transformers import (AutoModelForSequenceClassification, AutoTokenizer,
                           DataCollatorWithPadding, Trainer, TrainingArguments)
 
 # %% [markdown]
+# ### Global flags
+
+# %%
+FORCE_SAVE_DF = False
+LOCAL_RUN = False
+FORCE_SAVE_MODEL = False
+
+# %% [markdown]
 # ### Determine the device
 
 # %%
@@ -410,8 +418,6 @@ test_df.to_csv("./data/dataset/test_clean.csv", index=False)
 # Saving the dataframes as parquet files to avoid reprocessing the data.
 
 # %%
-FORCE_SAVE_DF = False
-
 os.makedirs("./data/dataframe", exist_ok=True)
 files_exists = all(
     os.path.exists(f"./data/dataframe/{s}.parquet")
@@ -637,12 +643,9 @@ valid_dataset = valid_dataset.remove_columns(["id"])
 test_dataset = test_dataset.remove_columns(["id"])
 
 # %%
-LOCAL_RUN = False
-
 if LOCAL_RUN:
     train_dataset = train_dataset.shuffle(seed=13).select(range(3000))
     valid_dataset = valid_dataset.shuffle(seed=13).select(range(800))
-    # test_dataset = test_dataset.shuffle(seed=13).select(range(1000))
 
 # %%
 model = AutoModelForSequenceClassification.from_pretrained(
@@ -699,19 +702,18 @@ trainer = Trainer(
     compute_metrics=compute_metrics
 )
 
-trainer.train()
-
-# %%
 model_directory = "./artifact/model/best"
 
-trainer.save_model(model_directory)
+if not os.path.exists(model_directory) or FORCE_SAVE_MODEL:
+    trainer.train()
+    trainer.save_model(model_directory)
+    print(f"Model saved to {model_directory}")
 
-print(f"Model saved to {model_directory}")
-
-# %%
-model = AutoModelForSequenceClassification.from_pretrained(model_directory)
-model.to(DEVICE)
-model.eval()
+else:
+    model = AutoModelForSequenceClassification.from_pretrained(model_directory)
+    model.to(DEVICE)
+    model.eval()
+    print(f"Model loaded from {model_directory}")
 
 # %%
 os.makedirs("./artifact/logits", exist_ok=True)
@@ -745,4 +747,3 @@ test_results = pd.concat([test_results, pd.DataFrame([result_deberta])])
 
 display(test_results)
 
-# %%
