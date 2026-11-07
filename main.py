@@ -658,9 +658,11 @@ test_results = pd.DataFrame(
 
 # %% [markdown]
 # ## Pre-trained model
+#
+# ### Define the model
 
 # %%
-MODEL_NAME = "microsoft/deberta-v3-base" if is_cuda else "microsoft/deberta-v3-small"
+MODEL_NAME = "microsoft/deberta-v3-small" if LOCAL_RUN else "microsoft/deberta-v3-base"
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
 
 sample_text = "This is a great project, not toxic at all!"
@@ -674,6 +676,28 @@ token_preview = pd.DataFrame({
 
 display(token_preview)
 
+# %% [markdown]
+# ### Find the token size
+
+# %%
+sample_comments = train_df["comment_text"].sample(
+    10000,
+    random_state=RANDOM_SEED
+).tolist()
+token_output = tokenizer(sample_comments, truncation=False)
+
+# count the number of tokens in each comment
+token_length = pd.Series([len(tokens) for tokens in token_output["input_ids"]])
+
+# calculate percentiles and the percentage that fit under 128
+print("Percentiles:")
+print(token_length.quantile([0.50, 0.75, 0.82, 0.95, 1.0]))
+percentage_under_128 = (token_length <= 128).mean()
+print(f"\nExact percentage <= 128 tokens: {percentage_under_128:.2%}")
+
+# %% [markdown]
+# ### Tokenize the dataset
+
 # %%
 train_dataset = Dataset.from_pandas(train_df)
 valid_dataset = Dataset.from_pandas(valid_df)
@@ -681,7 +705,7 @@ test_dataset = Dataset.from_pandas(test_df)
 
 
 def tokenize(batch):
-    tokens = tokenizer(batch['comment_text'], truncation=True, max_length=128)
+    tokens = tokenizer(batch["comment_text"], truncation=True, max_length=128)
     tokens["labels"] = batch["is_toxic"]
     return tokens
 
@@ -696,8 +720,9 @@ test_dataset = test_dataset.remove_columns(["id"])
 
 # %%
 if LOCAL_RUN:
-    train_dataset = train_dataset.shuffle(seed=13).select(range(3000))
-    valid_dataset = valid_dataset.shuffle(seed=13).select(range(800))
+    train_dataset = train_dataset.shuffle(seed=RANDOM_SEED).select(range(3000))
+    valid_dataset = valid_dataset.shuffle(seed=RANDOM_SEED).select(range(800))
+    test_dataset = test_dataset.shuffle(seed=RANDOM_SEED).select(range(1000))
 
 # %%
 model = AutoModelForSequenceClassification.from_pretrained(
@@ -724,12 +749,10 @@ target_batch_size = 32
 
 training_args = TrainingArguments(
     output_dir="./artifact/model",
-    num_train_epochs=3 if LOCAL_RUN else 3,
+    num_train_epochs=1 if LOCAL_RUN else 3,
     per_device_train_batch_size=batch_size,
     per_device_eval_batch_size=batch_size * 2,
     gradient_accumulation_steps=target_batch_size // batch_size,
-    gradient_checkpointing=False,
-    # gradient_checkpointing_kwargs={"every_n_layers": 4},
     bf16=is_cuda,
     learning_rate=2e-5,
     logging_steps=50,
