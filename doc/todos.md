@@ -54,8 +54,18 @@ Look at real misclassified comments to understand *why* models fail:
 - [x] Analyze false alarms: Compare how TF-IDF and DeBERTa handle harmless swearing
 - [x] Analyze missed attacks: Compare how TF-IDF and DeBERTa handle toxic comments without swear words
 
-## 6. Final Report & Submission
+## 6. Presentation Preparation
 
-- [ ] Summarize the main takeaways from the results table
-- [ ] Write up the discussion and findings
-- [ ] Final check to make sure code runs cleanly from scratch
+- [x] Summarize key quantitative results into core presentation takeaways
+- [x] Select 2–3 clear error case studies from the error analysis to highlight on slides
+- [x] Structure the presentation narrative
+- [x] Build the slide deck
+- [x] Write speaker notes for each slide
+- [x] Rehearse presentation, check timing, and prepare for potential Q&A
+
+## 7. Final Report & Submission
+
+- [ ] Tidy up notebook and add clear markdown documentation across cells
+- [ ] Expand presentation takeaways into the full written report
+- [ ] Document limitations and future work
+- [ ] Final check to ensure repository and notebook run cleanly end-to-end
