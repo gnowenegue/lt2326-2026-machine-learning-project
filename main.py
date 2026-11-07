@@ -37,7 +37,8 @@ from sklearn.dummy import DummyClassifier
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (accuracy_score, average_precision_score, f1_score,
-                             precision_score, recall_score)
+                             precision_recall_curve, precision_score,
+                             recall_score)
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from transformers import (AutoModelForSequenceClassification, AutoTokenizer,
@@ -652,10 +653,6 @@ y_proba_tfidf_lr = tfidf_lr_baseline.predict_proba(test_texts)[:, 1]
 result_tfidf_lr = evaluate_model(
     y_true, y_pred_tfidf_lr, y_proba_tfidf_lr, "TF-IDF + Logistic Regression")
 
-test_results = pd.DataFrame(
-    [result_majority, result_random, result_rule, result_tfidf_lr]
-)
-
 # %% [markdown]
 # ## Pre-trained model
 #
@@ -778,8 +775,9 @@ trainer = Trainer(
 )
 
 model_directory = "./artifact/model/best"
+os.makedirs(model_directory, exist_ok=True)
 
-if not os.path.exists(model_directory) or FORCE_SAVE_MODEL:
+if FORCE_SAVE_MODEL:
     trainer.train()
     trainer.save_model(model_directory)
     print(f"Model saved to {model_directory}")
@@ -788,39 +786,142 @@ else:
     model = AutoModelForSequenceClassification.from_pretrained(model_directory)
     model.to(DEVICE)
     model.eval()
+    trainer.model = model
     print(f"Model loaded from {model_directory}")
+
+# %% [markdown]
+# ### Run the prediction
 
 # %%
 os.makedirs("./artifact/logits", exist_ok=True)
 
 logits_path = "./artifact/logits/deberta_test_logits.npy"
 
-if os.path.exists(logits_path):
-    print("loading saved predictions")
-    logits = np.load(logits_path)
-else:
+if FORCE_SAVE_PREDICTIONS:
     test_pred = trainer.predict(test_dataset)
     logits = test_pred.predictions
 
     np.save(logits_path, logits)
     print(f"saved predictions to {logits_path}")
+else:
+    print("loading saved predictions")
+    logits = np.load(logits_path)
 
 
-y_pred_deberta = logits.argmax(axis=1)
+y_pred_deberta = logits.argmax(axis=-1)
 y_proba_deberta = torch.softmax(torch.tensor(logits), dim=-1)[:, 1].numpy()
-
-deberta_name = "DeBERTa (base)" if is_cuda else "DeBERTa (small)"
 
 result_deberta = evaluate_model(
     y_true,
     y_pred_deberta,
     y_proba_deberta,
-    model_name=deberta_name
+    model_name="DeBERTa"
 )
 
-test_results = pd.concat([test_results, pd.DataFrame([result_deberta])])
+# %% [markdown]
+# ## Evaluation results
+
+# %%
+test_results = pd.DataFrame([
+    result_majority, result_random, result_rule, result_tfidf_lr, result_deberta
+])
 
 display(test_results)
+
+# %%
+overall_columns = [
+    "Model", "Accuracy", "Precision", "Recall", "F1", "PR-AUC"
+]
+
+print(
+    test_results[overall_columns].to_latex(
+        index=False,
+        float_format="%.4f",
+        caption="Overall test set performance across baselines and DeBERTa.",
+        label="tab:overall_results"
+    )
+)
+
+# %%
+slice_cols = [
+    "Model",
+    "Recall (toxic with swear)",
+    "Recall (toxic without swear)",
+    "Delta Recall",
+    "FPR (non-toxic with swear)",
+    "FPR (non-toxic without swear)",
+    "Delta FPR"
+]
+print(
+    test_results[slice_cols].to_latex(
+        index=False,
+        float_format="%.4f",
+        caption="Slice-based recall and false positive rates.",
+        label="tab:slice_results"
+    )
+)
+
+# %% [markdown]
+# ### Precision-Recall Curve
+
+# %%
+# calculate precision and recall points for DeBERTa
+deberta_precision, deberta_recall, _ = precision_recall_curve(
+    y_true, y_proba_deberta
+)
+
+# calculate precision and recall points for TF-IDF + Logistic Regression
+tfidf_lr_precision, tfidf_lr_recall, _ = precision_recall_curve(
+    y_true, y_proba_tfidf_lr
+)
+
+# create the plot canvas
+plt.figure(figsize=(7, 5))
+
+# plot the DeBERTa curve
+plt.plot(
+    deberta_recall,
+    deberta_precision,
+    label=f"DeBERTa (PR-AUC = {result_deberta['PR-AUC']:.4f})",
+    color="royalblue",
+    linewidth=2
+)
+
+# plot the TF-IDF + Logistic Regression curve
+plt.plot(
+    tfidf_lr_recall,
+    tfidf_lr_precision,
+    label=f"TF-IDF + LR (PR-AUC = {result_tfidf_lr['PR-AUC']:.4f})",
+    color="darkorange",
+    linewidth=2
+)
+
+# plot the baseline reference (the overall percentage of toxic comments)
+toxic_prevalence = y_true.mean()
+plt.axhline(
+    y=toxic_prevalence,
+    color="gray",
+    linestyle="--",
+    label=f"No-skill baseline ({toxic_prevalence:.2%})"
+)
+
+# labels, titles, and legend
+plt.xlabel("Recall")
+plt.ylabel("Precision")
+plt.title("Precision-Recall Curve on Test Set")
+plt.xlim(0.0, 1.0)
+plt.ylim(0.0, 1.05)
+plt.grid(True, alpha=0.3)
+plt.legend(loc="lower left")
+
+os.makedirs("./artifact/figures", exist_ok=True)
+plt.savefig("./artifact/figures/pr_auc_curve.pdf")
+
+plt.tight_layout()
+plt.show()
+
+# %% [markdown]
+# ### Peek into TFIDF + Logistic Regression
 
 # %%
 tfidf = tfidf_lr_baseline.named_steps["tfidf"]
@@ -848,19 +949,6 @@ top_non_toxic_words = features_coefficients_df.sort_values(
 ).head(10)
 print("Top 10 words predicting NON-TOXIC:")
 display(top_non_toxic_words)
-
-# %%
-analysis_df = pd.DataFrame({
-    "comment_text": test_df["comment_text"],
-    "slice": test_df["slice"],
-    "is_toxic": test_df["is_toxic"],
-    "has_swear": test_df["has_swear"],
-    "pred_tfidf_lr": y_pred_tfidf_lr,
-    "prob_tfidf_lr": y_proba_tfidf_lr.round(4),
-    "pred_deberta": y_pred_deberta,
-    "prob_deberta": y_proba_deberta.round(4)
-})
-
 
 def print_samples(df, n=3):
     for _, row in df.sample(n).iterrows():
