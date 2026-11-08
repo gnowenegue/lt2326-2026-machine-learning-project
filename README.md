@@ -13,7 +13,13 @@ We test basic rule filters, TF-IDF with Logistic Regression, and a fine-tuned De
 
 * **Project Proposal:** [doc/proposal/proposal.pdf](doc/proposal/proposal.pdf)
 * **Presentation Slides:** [doc/presentation/slides.pdf](doc/presentation/slides.pdf)
-* **Final Report (WIP):** [doc/report/report.pdf](doc/report/report.pdf)
+* **Final Report:** [doc/report/report.pdf](doc/report/report.pdf)
+* **AI Assistance Logs:** [doc/ai_logs.pdf](doc/ai_logs.pdf) ([Markdown source](doc/ai_logs.md))
+
+## Datasets & Lexicon
+
+* **Toxicity Dataset:** [Kaggle Jigsaw Toxic Comment Classification Challenge](https://www.kaggle.com/competitions/jigsaw-toxic-comment-classification-challenge) (Wikipedia talk page comments labelled for toxicity). The notebook downloads it automatically via `kagglehub` if Kaggle credentials are configured, or reads local copies from `data/dataset_raw/`.
+* **Profanity Lexicon:** [NoSwearing.com](https://www.noswearing.com) dictionary, used to deterministically identify swear words and build evaluation test slices.
 
 ## How to Run
 
@@ -24,5 +30,6 @@ We test basic rule filters, TF-IDF with Logistic Regression, and a fine-tuned De
    uv sync
    ```
 
-2. **Run the notebook:**
-   Open [`main.ipynb`](main.ipynb) and run all cells. It walks through data cleaning, the baseline models, the DeBERTa evaluation, and real-world misclassification examples.
+2. **Run the notebook or view the walkthrough:**
+   - Run interactively: Open [`main.ipynb`](main.ipynb) and run all cells. It walks through data cleaning, baseline models, DeBERTa evaluation, and real-world misclassification examples.
+   - Read offline / in browser: Check [`main.md`](main.md) for the rendered Markdown version of the notebook with outputs and analysis.
