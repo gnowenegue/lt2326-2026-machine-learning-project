@@ -1,6 +1,7 @@
 \documentclass[11pt]{article}
 
-% Change "review" to "final" to generate the final (sometimes called camera-ready) version.
+% Change "review" to "final" to generate the final (sometimes called
+% camera-ready) version.
 % Change to "preprint" to generate a non-anonymous version with page numbers.
 \usepackage[final]{acl}
 
@@ -8,11 +9,13 @@
 \usepackage{times}
 \usepackage{latexsym}
 
-% For proper rendering and hyphenation of words containing Latin characters (including in bib files)
+% For proper rendering and hyphenation of words containing Latin
+% characters (including in bib files)
 \usepackage[T1]{fontenc}
 % For Vietnamese characters
 % \usepackage[T5]{fontenc}
-% See https://www.latex-project.org/help/documentation/encguide.pdf for other character sets
+% See https://www.latex-project.org/help/documentation/encguide.pdf
+% for other character sets
 
 % This assumes your files are encoded as UTF8
 \usepackage[utf8]{inputenc}
@@ -31,7 +34,11 @@
 %additional package(s)
 \usepackage{graphicx}
 
-% If the title and author information does not fit in the area allocated, uncomment the following
+\usepackage{amsmath}
+\usepackage{booktabs}
+
+% If the title and author information does not fit in the area
+% allocated, uncomment the following
 %
 %\setlength\titlebox{<dim>}
 %
@@ -58,7 +65,7 @@
 \author{Eugene Wong \\
   University of Gothenburg \\
   LT2326 Machine Learning for Statistical NLP: Advanced \\
-  \texttt{guswonju@student.gu.se} \\}
+\texttt{guswonju@student.gu.se} \\}
 
 %\author{
 %  \textbf{First Author\textsuperscript{1}},
@@ -101,271 +108,536 @@
 \begin{document}
 \maketitle
 \begin{abstract}
-This document is a supplement to the general instructions for *ACL authors. It contains instructions for using the \LaTeX{} style files for ACL conferences.
-The document itself conforms to its own specifications, and is therefore an example of what your manuscript should look like.
-These instructions should be used both for papers submitted for review and for final versions of accepted papers.
+  \textit{\textbf{Warning:} this paper contains content that may
+  be offensive or upsetting.}
+
+  Does swearing equal toxicity? Simple toxicity detection systems
+  often treat swear words as an immediate indicator of toxic
+  behavior. However, swearing and toxicity do not always align.
+  People swear casually when venting or expressing strong emotions. In
+  contrast, offensive remarks, serious harassment, and threats often
+  use swear-free language.
+  In this paper, we evaluate how the presence or absence of swear
+  words affects toxicity classifiers across a sliced evaluation
+  framework. We find that while a fine-tuned transformer outperforms
+  traditional models by a small margin, it still struggles
+  significantly to recognize non-toxic comments when they contain
+  casual swearing. Our findings show that model architecture cannot overcome
+  training dataset bias, highlighting the need for understanding
+  conversational intent rather than reacting to vocabulary.
 \end{abstract}
 
 \section{Introduction}
 
-These instructions are for authors submitting papers to *ACL conferences using \LaTeX. They are not self-contained. All authors must follow the general instructions for *ACL proceedings,\footnote{\url{http://acl-org.github.io/ACLPUB/formatting.html}} and this document contains additional instructions for the \LaTeX{} style files.
+Online forums and social media platforms struggle to create a safe
+space for users because it is difficult to moderate content
+accurately. Automated moderation systems often use keyword blocklists
+as an initial filter, while machine learning classifiers often learn
+to treat swear words as a shortcut to toxicity
+\citep{zhou-etal-2021-challenges}.
 
-The templates include the \LaTeX{} source of this document (\texttt{acl\_latex.tex}),
-the \LaTeX{} style file used to format it (\texttt{acl.sty}),
-an ACL bibliography style (\texttt{acl\_natbib.bst}),
-an example bibliography (\texttt{custom.bib}),
-and the bibliography for the ACL Anthology (\texttt{anthology.bib}).
-
-\section{Engines}
-
-To produce a PDF file, pdf\LaTeX{} is strongly recommended (over original \LaTeX{} plus dvips+ps2pdf or dvipdf).
-The style file \texttt{acl.sty} can also be used with
-lua\LaTeX{} and
-Xe\LaTeX{}, which are especially suitable for text in non-Latin scripts.
-The file \texttt{acl\_lualatex.tex} in this repository provides
-an example of how to use \texttt{acl.sty} with either
-lua\LaTeX{} or
-Xe\LaTeX{}.
-
-\section{Preamble}
-
-The first line of the file must be
+However, in everyday conversations, swearing and toxicity are not the
+same thing \citep{pamungkas-etal-2020-really}. People casually swear
+for humor, excitement, emphasis, or
+even frustration without meaning any harm:
 \begin{quote}
-\begin{verbatim}
-\documentclass[11pt]{article}
-\end{verbatim}
+  \textit{``This article is fucking amazing!''}
 \end{quote}
 
-To load the style file in the review version:
+In contrast, an abusive comment or threat can be phrased in polite
+language without any swear words:
 \begin{quote}
-\begin{verbatim}
-\usepackage[review]{acl}
-\end{verbatim}
-\end{quote}
-For the final version, omit the \verb|review| option:
-\begin{quote}
-\begin{verbatim}
-\usepackage{acl}
-\end{verbatim}
+  \textit{``You better watch your back when you walk home tonight.''}
 \end{quote}
 
-To use Times Roman, put the following in the preamble:
+We can group these failures into two main categories:
+\begin{enumerate}
+  \item \textbf{False Alarm:} Non-toxic comments containing casual
+    swearing are falsely flagged as toxic.
+  \item \textbf{Blind Spot:} Swear-free toxic comments are missed.
+\end{enumerate}
+
+To investigate how much the moderation systems are impacted, we
+formulate our research question:
+
 \begin{quote}
-\begin{verbatim}
-\usepackage{times}
-\end{verbatim}
+  \noindent\textit{How does the presence or absence of swear words
+  affect the performance of toxicity detection systems?}
 \end{quote}
-(Alternatives like txfonts or newtx are also acceptable.)
 
-Please see the \LaTeX{} source of this document for comments on other packages that may be useful.
+We hypothesize that models make the most mistakes when swearing and
+toxicity do not align. However, we expect transformers to outperform
+traditional bag-of-words models because they can understand words
+in the context of the entire sentence.
 
-Set the title and author using \verb|\title| and \verb|\author|. Within the author list, format multiple authors using \verb|\and| and \verb|\And| and \verb|\AND|; please see the \LaTeX{} source for examples.
+\section{Methodology}
 
-By default, the box containing the title and author names is set to the minimum of 5 cm. If you need more space, include the following in the preamble:
-\begin{quote}
-\begin{verbatim}
-\setlength\titlebox{<dim>}
-\end{verbatim}
-\end{quote}
-where \verb|<dim>| is replaced with a length. Do not set this length smaller than 5 cm.
+\subsection{Dataset}
 
-\section{Document Body}
+We use the Kaggle Jigsaw Toxic Comment Classification Challenge
+dataset\footnote{\url{https://www.kaggle.com/c/jigsaw-toxic-comment-classification-challenge}},
+which consists of human-labeled Wikipedia comments. The
+dataset is annotated with six labels: \textit{toxic},
+\textit{severe\_toxic}, \textit{obscene}, \textit{threat},
+\textit{insult}, and \textit{identity\_hate}.
 
-\subsection{Footnotes}
+However, for this research, we are only interested in knowing whether
+the comment is toxic or not. Therefore, we merge these six labels
+into a single binary class \texttt{is\_toxic}. If any of the six
+labels is positive, we define it as toxic (\texttt{is\_toxic} = 1),
+and non-toxic (\texttt{is\_toxic} = 0) otherwise.
 
-Footnotes are inserted with the \verb|\footnote| command.\footnote{This is a footnote.}
+In the test set, a large number of entries were excluded from
+evaluation and left unlabeled (marked with $-1$). We remove these
+entries, reducing the test set from 153,164 to 63,978. We notice that
+both splits are severely imbalanced, with only about 10\% of the
+comments labeled as toxic (10.17\% in the training set and 9.76\% in
+the test set). Because no validation set is provided, we split the
+training data into an 80\% training set (127,656 comments) and a 20\%
+validation set (31,915 comments), stratifying across both
+\texttt{is\_toxic} and \texttt{has\_swear} to preserve class and swear
+proportions across splits.
 
-\subsection{Tables and figures}
+\subsection{Data Cleanup}
 
-See Table~\ref{tab:accents} for an example of a table and its caption.
-\textbf{Do not override the default caption sizes.}
+We first apply standard text normalization by unescaping HTML
+entities, removing surrounding quotation marks and whitespace, and
+collapsing whitespace and linebreaks. Next, we apply three targeted
+preprocessing steps:
+\begin{enumerate}
+  \item \textbf{Wikipedia Markup Removal:} We strip the section
+    headers (\texttt{==Header==}) and reply indentation colons
+    (\texttt{:}) to make the text cleaner to process.
+  \item \textbf{Token Masking:} We replace web URLs with
+    \texttt{[URL]} and IP addresses with \texttt{[IP]}. Masking these
+    reduces noise.
+  \item \textbf{Collapsing Elongated Words:} There is frequent use of
+    repeated letters for emphasis (e.g., \textit{``sooooo''}). We
+    collapse three or more identical characters down to two (e.g.,
+    \textit{``soo''}) to group elongated words together.
+\end{enumerate}
 
-\begin{table}
+\subsection{Swear Word Lexicon}
+
+To determine whether comments contain swear words, we need a lexicon.
+For that, we use the dictionary from
+\texttt{noswearing.com}\footnote{\url{https://www.noswearing.com}}.
+
+However, we notice that the list contains some terms that are not
+offensive by nature. Thus, we apply a whitelist to explicitly remove
+these words from our swear word lexicon:
+
+\begin{enumerate}
+  \item \textbf{Sexual Orientation:} Words such as \textit{``gay''},
+    \textit{``lesbian''}, and \textit{``queer''} are legitimate identity terms.
+  \item \textbf{Anatomical Terms:} Words such as \textit{``penis''},
+    \textit{``vagina''}, \textit{``testicle''}, and \textit{``anus''}
+    are medical and
+    biological terms.
+\end{enumerate}
+
+After removing the whitelisted words, our final lexicon contains 341
+swear words.
+
+To prevent false substring matches (such as matching \textit{``ass''}
+  inside \textit{``classic''} or \textit{``hell''} inside
+\textit{``hello''}), we compile the lexicon into a regular expression
+using word boundaries (\texttt{\textbackslash b}).
+
+We then define a binary class \texttt{has\_swear}, where
+\texttt{has\_swear} = 1 if the comment contains at least one swear
+word from the lexicon, and \texttt{has\_swear} = 0 otherwise.
+
+\subsection{Evaluation Framework}
+
+Because the dataset is severely imbalanced, standard aggregate
+metrics cannot tell the full story
+\citep{rottger-etal-2021-hatecheck}. To isolate the effect of swear
+words and test our hypothesis, we slice the test set into a
+2$\times$2 matrix based on toxicity (\texttt{is\_toxic}) and whether
+the comment contains swear words (\texttt{has\_swear}):
+
+\begin{table}[ht]
   \centering
-  \begin{tabular}{lc}
-    \hline
-    \textbf{Command} & \textbf{Output} \\
-    \hline
-    \verb|{\"a}|     & {\"a}           \\
-    \verb|{\^e}|     & {\^e}           \\
-    \verb|{\`i}|     & {\`i}           \\
-    \verb|{\.I}|     & {\.I}           \\
-    \verb|{\o}|      & {\o}            \\
-    \verb|{\'u}|     & {\'u}           \\
-    \verb|{\aa}|     & {\aa}           \\\hline
-  \end{tabular}
-  \begin{tabular}{lc}
-    \hline
-    \textbf{Command} & \textbf{Output} \\
-    \hline
-    \verb|{\c c}|    & {\c c}          \\
-    \verb|{\u g}|    & {\u g}          \\
-    \verb|{\l}|      & {\l}            \\
-    \verb|{\~n}|     & {\~n}           \\
-    \verb|{\H o}|    & {\H o}          \\
-    \verb|{\v r}|    & {\v r}          \\
-    \verb|{\ss}|     & {\ss}           \\
-    \hline
-  \end{tabular}
-  \caption{Example commands for accented characters, to be used in, \emph{e.g.}, Bib\TeX{} entries.}
-  \label{tab:accents}
+  \caption{Test set comment distribution across toxicity and swear
+  word presence ($N = 63,978$).}
+  \label{tab:matrix_2x2}
+  \resizebox{\columnwidth}{!}{%
+    \begin{tabular}{lrrr}
+      \toprule
+      & \textbf{With Swear} & \textbf{No Swear} & \textbf{Total} \\
+      \midrule
+      \textbf{Toxic} & 3,234 (5.05\%) & 3,009 (4.70\%) & 6,243 (9.76\%) \\
+      \textbf{Non-Toxic} & 2,874 (4.49\%) & 54,861 (85.75\%) & 57,735
+      (90.24\%) \\
+      \midrule
+      \textbf{Total} & 6,108 (9.55\%) & 57,870 (90.45\%) & 63,978 (100\%) \\
+      \bottomrule
+    \end{tabular}%
+  }
 \end{table}
 
-As much as possible, fonts in figures should conform
-to the document fonts. See Figure~\ref{fig:experiments} for an example of a figure and its caption.
+Table~\ref{tab:matrix_2x2} reveals two critical challenges:
+\begin{itemize}
+  \item \textbf{False Alarm Risk:} Among the 6,108 comments containing
+    swear words, toxic comments (3,234, or 52.95\%) and non-toxic
+    comments (2,874, or 47.05\%) are almost evenly split. Determining
+    the comment's toxicity is essentially doing a coin flip.
+  \item \textbf{Blind Spot Risk:} Nearly half of all toxic comments
+    (48.20\%, or 3,009 out of 6,243) contain no swear words at all.
+\end{itemize}
 
-Using the \verb|graphicx| package graphics files can be included within figure
-environment at an appropriate point within the text.
-The \verb|graphicx| package supports various optional arguments to control the
-appearance of the figure.
-You must include it explicitly in the \LaTeX{} preamble (after the
-\verb|\documentclass| declaration and before \verb|\begin{document}|) using
-\verb|\usepackage{graphicx}|.
+In contrast to the balanced swear-word distribution in the test set,
+the training set exhibits severe distribution skew. 78.22\% of all
+swearing comments in the training set are toxic (6,865 toxic vs. 1,912
+non-toxic). This imbalance creates bias that swearing means toxicity.
 
-\begin{figure}[t]
-  \includegraphics[width=\columnwidth]{example-image-golden}
-  \caption{A figure with a caption that runs for more than one line.
-    Example image is usually available through the \texttt{mwe} package
-    without even mentioning it in the preamble.}
-  \label{fig:experiments}
-\end{figure}
+To quantify performance, we focus on two key metrics:
 
-\begin{figure*}[t]
-  \includegraphics[width=0.48\linewidth]{example-image-a} \hfill
-  \includegraphics[width=0.48\linewidth]{example-image-b}
-  \caption {A minimal working example to demonstrate how to place
-    two images side-by-side.}
-\end{figure*}
+\begin{equation}
+  \Delta\text{FPR} = \text{FPR}_{\text{with swear}} -
+  \text{FPR}_{\text{no swear}}
+\end{equation}
+$\Delta\text{FPR}$ measures the \textbf{False Alarm Surge}: how much
+does casual swearing inflate false alarms? Ideally, a fair model
+should achieve $\Delta\text{FPR} = 0$, indicating that casual
+swearing never triggers a false accusation.
 
-\subsection{Hyperlinks}
+\begin{equation}
+  \Delta\text{Recall} = \text{Recall}_{\text{with swear}} -
+  \text{Recall}_{\text{no swear}}
+\end{equation}
+$\Delta\text{Recall}$ measures the \textbf{Sensitivity Drop}: how
+much does detection drop when a comment contains no swear words?
+Ideally, a robust model should achieve $\Delta\text{Recall} = 0$,
+indicating that it catches toxic comments without depending on swear words.
 
-Users of older versions of \LaTeX{} may encounter the following error during compilation:
-\begin{quote}
-\verb|\pdfendlink| ended up in different nesting level than \verb|\pdfstartlink|.
-\end{quote}
-This happens when pdf\LaTeX{} is used and a citation splits across a page boundary. The best way to fix this is to upgrade \LaTeX{} to 2018-12-01 or later.
+\subsection{Models Evaluated}
 
-\subsection{Citations}
+We evaluate five models spanning from simple heuristics to a
+pre-trained transformer:
 
-\begin{table*}
+\begin{enumerate}
+  \item \textbf{Majority Baseline:} Always predicts the majority
+    class (non-toxic). It serves as an accuracy benchmark (90.24\%)
+    to demonstrate why accuracy is a flawed metric for an imbalanced dataset.
+  \item \textbf{Random Baseline:} Generates predictions randomly
+    according to the class distribution (10\% toxic, 90\% non-toxic).
+  \item \textbf{Rule-Based Lexicon Baseline:} Predicts that a comment is
+    toxic if it contains at least one word from our swear lexicon
+    (\texttt{has\_swear} = 1). This acts as a benchmark for lexical bias.
+  \item \textbf{TF-IDF + Logistic Regression:} Text is vectorized
+    into the top 25,000 unigrams and bigrams using sublinear term
+    frequency scaling, followed by a logistic regression classifier
+    with balanced class weights to compensate for class imbalance.
+  \item \textbf{DeBERTa-v3-base:} A pre-trained transformer that uses
+    disentangled self-attention to process words in relation to their
+    surrounding context. Analyzing token length across 10,000 sampled
+    comments showed that 82.75\% fit within 128 tokens,
+    so we set the maximum sequence length to 128. We fine-tune the model
+    for 3 epochs with an effective batch size of 32 (batch size 16 with
+    gradient accumulation), a learning rate of $2\times 10^{-5}$, and
+    mixed precision (\texttt{bf16}), selecting the final model from the
+    checkpoint with the highest $F_1$.
+\end{enumerate}
+
+\section{Results}
+
+\subsection{Overall Metrics}
+
+Table~\ref{tab:overall_results} presents the overall evaluation metrics
+across all five models.
+
+\begin{table*}[t]
   \centering
-  \begin{tabular}{lll}
-    \hline
-    \textbf{Output}           & \textbf{natbib command} & \textbf{ACL only command} \\
-    \hline
-    \citep{Gusfield:97}       & \verb|\citep|           &                           \\
-    \citealp{Gusfield:97}     & \verb|\citealp|         &                           \\
-    \citet{Gusfield:97}       & \verb|\citet|           &                           \\
-    \citeyearpar{Gusfield:97} & \verb|\citeyearpar|     &                           \\
-    \citeposs{Gusfield:97}    &                         & \verb|\citeposs|          \\
-    \hline
+  \caption{Overall test set performance across baselines and DeBERTa.}
+  \label{tab:overall_results}
+  \begin{tabular}{lccccc}
+    \toprule
+    Model & Accuracy & Precision & Recall & $F_1$ & PR-AUC \\
+    \midrule
+    Majority Baseline & 0.9024 & 0.0000 & 0.0000 & 0.0000 & 0.0976 \\
+    Random Baseline & 0.8219 & 0.1000 & 0.1032 & 0.1016 & 0.0978 \\
+    Rule-Based Baseline & \textbf{0.9080} & \textbf{0.5295} & 0.5180
+    & 0.5237 & N/A \\
+    TF-IDF + Logistic Regression & 0.8722 & 0.4267 & 0.9020 & 0.5793 & 0.7474 \\
+    DeBERTa & 0.9051 & 0.5074 & \textbf{0.9369} &
+    \textbf{0.6583} & \textbf{0.8074} \\
+    \bottomrule
   \end{tabular}
-  \caption{\label{citation-guide}
-    Citation commands supported by the style file.
-    The style is based on the natbib package and supports all natbib citation commands.
-    It also supports commands defined in previous ACL style files for compatibility.
-  }
 \end{table*}
 
-Table~\ref{citation-guide} shows the syntax supported by the style files.
-We encourage you to use the natbib styles.
-You can use the command \verb|\citet| (cite in text) to get ``author (year)'' citations, like this citation to a paper by \citet{Gusfield:97}.
-You can use the command \verb|\citep| (cite in parentheses) to get ``(author, year)'' citations \citep{Gusfield:97}.
-You can use the command \verb|\citealp| (alternative cite without parentheses) to get ``author, year'' citations, which is useful for using citations within parentheses (e.g. \citealp{Gusfield:97}).
+The Majority Baseline achieves a high accuracy of 90.24\% while its
+$F_1$ is 0.00\%. This proves that standard accuracy is misleading on
+an imbalanced dataset. A similar pattern is shown by the Random
+Baseline ($F_1 = 10.16\%$).
 
-A possessive citation can be made with the command \verb|\citeposs|.
-This is not a standard natbib command, so it is generally not compatible
-with other style files.
+The Rule-Based baseline's $F_1$ of 52.37\% (recall of 51.80\% and
+precision of 52.95\%) directly reflects the coin-flip analogy we
+described in Section~2.4.
 
-\subsection{References}
+As expected, DeBERTa achieves the highest overall performance with an
+$F_1$ score of 65.83\% (an absolute gain of 7.90 percentage points over
+TF-IDF + Logistic Regression) and a PR-AUC of 80.74\% (substantially
+outperforming TF-IDF's 74.74\%).
 
-\nocite{Ando2005,andrew2007scalable,rasooli-tetrault-2015}
+\begin{table*}[t]
+  \centering
+  \caption{Sliced evaluation across toxic comments (Recall) and
+  non-toxic comments (False Alarm Rate).}
+  \label{tab:slice_results}
+  \small
+  \begin{tabular}{lcccccc}
+    \toprule
+    & \multicolumn{3}{c}{\textbf{Toxic Comments (Recall)}} &
+    \multicolumn{3}{c}{\textbf{Non-Toxic Comments (False Alarm Rate)}} \\
+    \cmidrule(lr){2-4} \cmidrule(lr){5-7}
+    Model & With Swear & No Swear & $\Delta\text{Recall}$ & With
+    Swear & No Swear & $\Delta\text{FPR}$ \\
+    \midrule
+    Majority Baseline & 0.0000 & 0.0000 & 0.0000 & 0.0000 & 0.0000 & 0.0000 \\
+    Random Baseline & 0.1030 & 0.1034 & $-0.0004$ & 0.1023 & 0.1003 & 0.0020 \\
+    Rule-Based Baseline & 1.0000 & 0.0000 & 1.0000 & 1.0000 & 0.0000 & 1.0000 \\
+    TF-IDF + Logistic Regression & 0.9536 & 0.8465 & 0.1072 & 0.6500
+    & 0.1039 & 0.5461 \\
+    DeBERTa & \textbf{0.9706} & \textbf{0.9006} & \textbf{0.0700} &
+    \textbf{0.5828} & \textbf{0.0730} & \textbf{0.5098} \\
+    \bottomrule
+  \end{tabular}
+\end{table*}
 
-The \LaTeX{} and Bib\TeX{} style files provided roughly follow the American Psychological Association format.
-If your own bib file is named \texttt{custom.bib}, then placing the following before any appendices in your \LaTeX{} file will generate the references section for you:
+\subsection{Sliced Evaluation and Lexical Bias}
+
+Table~\ref{tab:slice_results} evaluates our five models across the
+four slices of our 2$\times$2 matrix.
+
+The Rule-Based baseline perfectly portrays the failure of using
+keywords to determine toxicity. It achieves 100\% recall on toxic
+comments with swear words, but 0\% recall on toxic comments without
+swear words (a 100.00 percentage point sensitivity drop,
+$\Delta\text{Recall}$). This means it completely fails to identify
+toxic comments when there are no swear words. In addition, it
+falsely flags 100\% of casual swearing comments (100.00\% FPR).
+
+Comparing the TF-IDF baseline against DeBERTa highlights both the
+strength and the limits of contextual modeling:
+\begin{itemize}
+  \item \textbf{Where DeBERTa improves (The Blind Spot):} The TF-IDF
+    baseline achieves only 84.65\% recall on swear-free toxicity
+    (a 10.72 percentage point sensitivity drop, $\Delta\text{Recall}$).
+    DeBERTa uses surrounding context to catch more subtle toxicity,
+    lifting recall to 90.06\% and shrinking this gap to 7.00
+    percentage points ($\Delta\text{Recall}$).
+  \item \textbf{Where both models struggle (False Alarms):} TF-IDF
+    wrongly flags 65.00\% of non-toxic comments containing casual
+    swearing (a false alarm surge of 54.61 percentage points over its
+    swear-free rate, $\Delta\text{FPR}$). While DeBERTa's self-attention
+    reduces this false alarm rate to 58.28\%, it still exhibits a
+    surge of 50.98 percentage points over swear-free comments
+    ($\Delta\text{FPR}$).
+\end{itemize}
+
+This confirms our hypothesis that while contextual attention helps
+improve the performance of toxicity detection, it still cannot
+overcome the strong correlation between toxicity and swear words
+learned from a biased dataset.
+
+\section{Error Analysis}
+
+To understand why the traditional bag-of-words model fails and where
+DeBERTa shines, we inspect the learned feature weights and analyze
+error cases from the test predictions.
+
+\subsection{The Bag-of-Words Trap: Feature Weights}
+
+\begin{table}[ht]
+  \centering
+  \caption{Top learned Logistic Regression coefficients from the
+  TF-IDF baseline.}
+  \label{tab:lr_weights}
+  \small
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{lr lr}
+    \toprule
+    \multicolumn{2}{c}{\textbf{Top Toxic Features}} &
+    \multicolumn{2}{c}{\textbf{Top Non-Toxic Features}} \\
+    \cmidrule(lr){1-2} \cmidrule(lr){3-4}
+    Feature & Weight & Feature & Weight \\
+    \midrule
+    \texttt{fuck} & $+22.70$ & \texttt{thanks} & $-5.88$ \\
+    \texttt{fucking} & $+19.75$ & \texttt{talk} & $-5.01$ \\
+    \texttt{stupid} & $+18.67$ & \texttt{thank} & $-4.81$ \\
+    \texttt{shit} & $+18.03$ & \texttt{thank you} & $-4.79$ \\
+    \texttt{idiot} & $+15.86$ & \texttt{please} & $-4.74$ \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Inspecting the top learned coefficients from the TF-IDF with Logistic
+Regression model (Table~\ref{tab:lr_weights}) reveals that swear
+words have massive positive weights, while the opposite, polite
+expressions, carry much smaller negative weights. As a result, a
+single swear word can overpower the rest of the sentence and push the
+prediction toward the toxic class regardless of the surrounding context.
+
+\subsection{Where Context Helps: DeBERTa's Rescues}
+
+Out of the 2,874 non-toxic comments containing casual swearing, DeBERTa
+successfully corrects 466 comments that the TF-IDF baseline falsely
+flags. A clear example is shown below:
+
 \begin{quote}
-\begin{verbatim}
-\bibliography{custom}
-\end{verbatim}
+  \small
+  \textit{``Well, a station that loses out on the CW... they may be
+  shit-out-of-luck, but they won't close, as too much money is at stake...''}
+  \par\noindent
+  \textbf{Human:} Non-toxic \\
+  \textbf{Has Swear:} Yes \\
+  \textbf{TF-IDF:} Toxic ($P(\text{toxic}) = 50.10\%$) \\
+  \textbf{DeBERTa:} Non-toxic ($P(\text{toxic}) = 3.76\%$)
 \end{quote}
 
-You can obtain the complete ACL Anthology as a Bib\TeX{} file from \url{https://aclweb.org/anthology/anthology.bib.gz}.
-To include both the Anthology and your own .bib file, use the following instead of the above.
+TF-IDF flags the comment as toxic because of the isolated word
+\textit{``shit''}, while DeBERTa recognizes the harmless idiom
+\textit{``shit-out-of-luck''} in context, predicting with high
+confidence that it is non-toxic.
+
+Similarly, out of the 3,009 swear-free toxic comments,
+DeBERTa catches 320 comments that the TF-IDF baseline misses entirely:
+
 \begin{quote}
-\begin{verbatim}
-\bibliography{anthology,custom}
-\end{verbatim}
+  \small
+  \textit{``he was the gayest person alive....''}
+  \par\noindent
+  \textbf{Human:} Toxic \\
+  \textbf{Has Swear:} No \\
+  \textbf{TF-IDF:} Non-toxic ($P(\text{toxic}) = 34.23\%$) \\
+  \textbf{DeBERTa:} Toxic ($P(\text{toxic}) = 97.07\%$)
 \end{quote}
 
-Please see Section~\ref{sec:bibtex} for information on preparing Bib\TeX{} files.
+This comment does not contain any swear words, so TF-IDF predicts it
+as non-toxic. DeBERTa, however, reads the sentence as a whole and
+recognizes the targeted insult, correctly classifying it as toxic.
 
-\subsection{Equations}
+\subsection{Shared Failures}
 
-An example equation is shown below:
-\begin{equation}
-  \label{eq:example}
-  A = \pi r^2
-\end{equation}
+Despite DeBERTa's contextual capability, there are still cases where
+it fails alongside the TF-IDF model. Across the test set, both models
+falsely flag 1,402 non-toxic comments containing swear words (48.78\%
+of that slice), and both fail to detect 142 swear-free toxic comments
+(4.72\% of that slice):
 
-Labels for equation numbers, sections, subsections, figures and tables
-are all defined with the \verb|\label{label}| command and cross references
-to them are made with the \verb|\ref{label}| command.
+\begin{enumerate}\setlength{\itemsep}{1pt}\setlength{\parskip}{0pt}
+  \item \textbf{Emotional Venting (Shared False Alarm):}
+    \begin{quote}
+      \small
+      \textit{``Well honestly I cant be fucking bothered tonight. So
+      sleep wee all u editors ans admits . I'm off to bed. CU anaon''}
+    \end{quote}
+    \small
+    \textbf{Human:} Non-toxic \\
+    \textbf{Has Swear:} Yes \\
+    \textbf{TF-IDF:} Toxic ($P(\text{toxic}) = 99.43\%$) \\
+    \textbf{DeBERTa:} Toxic ($P(\text{toxic}) = 99.38\%$)
+    \par
+    \normalsize
+    In this comment, the swear word is used casually to express an
+    emotion. However, both models predict with over 99\% certainty
+    that the comment is toxic.
 
-This an example cross-reference to Equation~\ref{eq:example}.
+  \item \textbf{Polite Threats (Shared Blind Spot):}
+    \begin{quote}
+      \small
+      \textit{``Nice job inserting your left-wing garbage in Jan
+        Brewers article. I removed it and if you vandalize the article
+      again you will be blocked from editing on Wikipedia.''}
+    \end{quote}
+    \small
+    \textbf{Human:} Toxic \\
+    \textbf{Has Swear:} No \\
+    \textbf{TF-IDF:} Non-toxic ($P(\text{toxic}) = 47.34\%$) \\
+    \textbf{DeBERTa:} Non-toxic ($P(\text{toxic}) = 9.74\%$)
+    \par
+    \normalsize
+    This hostile comment contains no swear words and adopts
+    an administrative tone, successfully deceiving both models. DeBERTa
+    assigns only a 9.74\% toxicity probability, failing to detect
+    the underlying coercive threat.
+\end{enumerate}
 
-\subsection{Appendices}
+\section{Conclusion}
 
-Use \verb|\appendix| before any appendix section to switch the section numbering over to letters. See Appendix~\ref{sec:appendix} for an example.
+\subsection{Takeaways}
 
-\section{Bib\TeX{} Files}
-\label{sec:bibtex}
+In this paper, we evaluated how the presence or absence of swear
+words affects the performance of toxicity detection systems using a
+2$\times$2 sliced evaluation framework on 63,978~human-labeled
+Wikipedia comments. We establish that swearing $\neq$ toxicity.
 
-Unicode cannot be used in Bib\TeX{} entries, and some ways of typing special characters can disrupt Bib\TeX's alphabetization. The recommended way of typing special characters is shown in Table~\ref{tab:accents}.
+Traditional bag-of-words models suffer from severe lexical bias. The
+presence of swear words causes the false alarm rate to surge from
+10.39\% to 65.00\% (a surge of 54.61 percentage points, $\Delta\text{FPR}$).
+It also causes a 10.72 percentage point drop in detection recall
+($\Delta\text{Recall}$) when toxic comments are swear-free.
 
-Please ensure that Bib\TeX{} records contain DOIs or URLs when possible, and for all the ACL materials that you reference.
-Use the \verb|doi| field for DOIs and the \verb|url| field for URLs.
-If a Bib\TeX{} entry has a URL or DOI field, the paper title in the references section will appear as a hyperlink to the paper, using the hyperref \LaTeX{} package.
+DeBERTa, despite its contextual self-attention, still falsely flags
+\textbf{58.28\%} of non-toxic comments containing casual swearing.
+This shows that even a contextual transformer cannot overcome lexical
+bias when the training distribution is heavily skewed. Because 78.22\%
+of comments containing swear words in the training set are
+labeled as toxic, DeBERTa learns to rely on swear words as a
+shortcut. Effective moderation requires understanding conversational
+intent, not reacting to vocabulary.
 
-\section*{Limitations}
+\subsection{Limitations}
 
-This document does not cover the content requirements for ACL or any
-other specific venue.  Check the author instructions for
-information on
-maximum page lengths, the required ``Limitations'' section,
-and so on.
+We acknowledge several limitations in our experimental setup:
 
-\section*{Acknowledgments}
+\begin{enumerate}\setlength{\itemsep}{1pt}\setlength{\parskip}{0pt}
+  \item \textbf{Lexicon Coverage and Obfuscation:} Our swear word
+    lexicon relies on an unofficial dictionary of 341 words and
+    cannot be used as a gold standard. In addition, keyword matching
+    cannot detect obfuscation and leetspeak (e.g., \textit{``f*ck''}
+    or \textit{``sh1t''}). This means that some comments are
+    still falsely classified as swear-free.
 
-This document has been adapted
-by Steven Bethard, Ryan Cotterell and Rui Yan
-from the instructions for earlier ACL and NAACL proceedings, including those for
-ACL 2019 by Douwe Kiela and Ivan Vuli\'{c},
-NAACL 2019 by Stephanie Lukin and Alla Roskovskaya,
-ACL 2018 by Shay Cohen, Kevin Gimpel, and Wei Lu,
-NAACL 2018 by Margaret Mitchell and Stephanie Lukin,
-Bib\TeX{} suggestions for (NA)ACL 2017/2018 from Jason Eisner,
-ACL 2017 by Dan Gildea and Min-Yen Kan,
-NAACL 2017 by Margaret Mitchell,
-ACL 2012 by Maggie Li and Michael White,
-ACL 2010 by Jing-Shin Chang and Philipp Koehn,
-ACL 2008 by Johanna D. Moore, Simone Teufel, James Allan, and Sadaoki Furui,
-ACL 2005 by Hwee Tou Ng and Kemal Oflazer,
-ACL 2002 by Eugene Charniak and Dekang Lin,
-and earlier ACL and EACL formats written by several people, including
-John Chen, Henry S. Thompson and Donald Walker.
-Additional elements were taken from the formatting instructions of the \emph{International Joint Conference on Artificial Intelligence} and the \emph{Conference on Computer Vision and Pattern Recognition}.
+  \item \textbf{Domain Specificity:} The dataset comes from Wikipedia
+    comments, which exhibit different conversational norms, wording,
+    and emotional tone compared to other domains like social media
+    platforms or forums.
 
-% Bibliography entries for the entire Anthology, followed by custom entries
-%\bibliography{custom,anthology-overleaf-1,anthology-overleaf-2}
+  \item \textbf{Binary Target Consolidation:} Our experiment is
+    simplified by merging the six labels into a single
+    \texttt{is\_toxic} class. However, re-evaluating the whole
+    experiment under the subcategories of toxicity could potentially
+    yield new insights.
+\end{enumerate}
 
-% Custom bibliography entries only
+\subsection{Future Work}
+
+In order to improve the performance of toxicity detection, we should
+focus on improving dataset balance and annotation quality rather
+than solely increasing model size.
+
+\begin{enumerate}\setlength{\itemsep}{1pt}\setlength{\parskip}{0pt}
+  \item \textbf{Counterfactual Data Augmentation:} Training datasets
+    could be augmented by inserting casual swear words into non-toxic
+    comments without changing the intent and toxicity (e.g.,
+      \textit{``This is awesome''} $\to$ \textit{``This is fucking
+    awesome''}). This would teach the models that the presence of swear
+    words does not imply toxicity.
+
+  \item \textbf{Profanity-Aware Tokenization:} Standard tokenizers
+    struggle with obfuscated swearing (e.g., \textit{``f*ck''} or
+    \textit{``sh!t''}). We could explore training specialized domain
+    tokenizers to better recognize obfuscated swear word variants as
+    unified tokens.
+
+  \item \textbf{Fairness-Regularized Objectives:} We need to adjust
+    the loss functions so that penalties account for class
+    and slice imbalances.
+\end{enumerate}
+
 \bibliography{custom}
-
-\appendix
-
-\section{Example Appendix}
-\label{sec:appendix}
-
-This is an appendix.
 
 \end{document}
