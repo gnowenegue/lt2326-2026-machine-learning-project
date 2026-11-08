@@ -55,13 +55,13 @@ FORCE_SAVE_DF = True
 FORCE_SAVE_DF_CSV = True
 
 # running locally
-LOCAL_RUN = True
+LOCAL_RUN = False
 
 # force save the fine-tuned model after training
-FORCE_SAVE_MODEL = False
+FORCE_SAVE_MODEL = True
 
 # force save the predictions
-FORCE_SAVE_PREDICTIONS = False
+FORCE_SAVE_PREDICTIONS = True
 
 RANDOM_SEED = 13
 
@@ -421,6 +421,9 @@ train_df, valid_df = train_test_split(
     stratify=train_df_backup[["is_toxic", "has_swear"]],
 )
 
+print(f"Size of train set: {len(train_df):,d}")
+print(f"Size of validation set: {len(valid_df):,d}")
+
 # %% [markdown]
 # ### Split the test dataset into 4 slices
 
@@ -671,6 +674,8 @@ token_preview = pd.DataFrame({
     "Token ID": tokens["input_ids"]
 })
 
+print(f"Model: {MODEL_NAME}")
+
 display(token_preview)
 
 # %% [markdown]
@@ -720,6 +725,9 @@ if LOCAL_RUN:
     train_dataset = train_dataset.shuffle(seed=RANDOM_SEED).select(range(3000))
     valid_dataset = valid_dataset.shuffle(seed=RANDOM_SEED).select(range(800))
     test_dataset = test_dataset.shuffle(seed=RANDOM_SEED).select(range(1000))
+    print("Local run")
+else:
+    print("Not local run")
 
 # %%
 model = AutoModelForSequenceClassification.from_pretrained(
@@ -1077,5 +1085,3 @@ print(
     f"TF-IDF + LR prediction: {blind_spot_sample_row['pred_tfidf_lr']} ({blind_spot_sample_row["prob_tfidf_lr"]:.2%})")
 print(
     f"DeBERTa prediction: {blind_spot_sample_row['pred_deberta']} ({blind_spot_sample_row["prob_deberta"]:.2%})")
-
-# %%
