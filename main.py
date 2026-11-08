@@ -791,11 +791,17 @@ if FORCE_SAVE_MODEL:
     print(f"Model saved to {model_directory}")
 
 else:
-    model = AutoModelForSequenceClassification.from_pretrained(model_directory)
+    # Use local folder if weights exist; otherwise pull from Hugging Face Hub
+    has_local_weights = os.path.exists(
+        os.path.join(model_directory, "model.safetensors")
+    )
+    load_path = model_directory if has_local_weights else "gnowenegue/deberta-v3-base-toxic-classification"
+
+    model = AutoModelForSequenceClassification.from_pretrained(load_path)
     model.to(DEVICE)
     model.eval()
     trainer.model = model
-    print(f"Model loaded from {model_directory}")
+    print(f"Model loaded from {load_path}")
 
 # %% [markdown]
 # ### Run the prediction
