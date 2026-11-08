@@ -21,6 +21,25 @@ We test basic rule filters, TF-IDF with Logistic Regression, and a fine-tuned De
 * **Toxicity Dataset:** [Kaggle Jigsaw Toxic Comment Classification Challenge](https://www.kaggle.com/competitions/jigsaw-toxic-comment-classification-challenge) (Wikipedia talk page comments labelled for toxicity). The notebook downloads it automatically via `kagglehub` if Kaggle credentials are configured, or reads local copies from `data/dataset_raw/`.
 * **Profanity Lexicon:** [NoSwearing.com](https://www.noswearing.com) dictionary, used to deterministically identify swear words and build evaluation test slices.
 
+## Fine-Tuned Model
+
+The fine-tuned model is hosted on the Hugging Face Hub:
+* **Model:** [`gnowenegue/deberta-v3-base-toxic-classification`](https://huggingface.co/gnowenegue/deberta-v3-base-toxic-classification)
+
+You can use it directly in Python with the `transformers` pipeline:
+
+```python
+from transformers import pipeline
+
+classifier = pipeline(
+    "text-classification",
+    model="gnowenegue/deberta-v3-base-toxic-classification"
+)
+
+# Test with a harmless comment containing casual slang
+print(classifier("This is freaking awesome!"))
+```
+
 ## How to Run
 
 1. **Install dependencies:**
